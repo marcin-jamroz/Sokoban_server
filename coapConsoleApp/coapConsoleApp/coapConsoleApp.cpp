@@ -22,18 +22,18 @@ int main()
 {
 	char header[4] = { 0 };
 	char version = 0b01;
-	MessageType msgType = NON;
+	char msgType = CoAP::MessageType::ACK;
 	char len = 3;
-	ResponseCode code = SERVER_ERROR;
+	char code = CoAP::ResponseCode::SERVER_ERROR;
 	int details = 1;
-	setHeader(header, version, msgType, len, code, details, "01");
+	CoAP::setHeader(header, version, msgType, len, code, details, "01");
 	for (int i = 0; i < 4; i++) {
 		printf("header[%d]: ", i);
 		printf(BYTE_TO_BINARY_PATTERN "\n", BYTE_TO_BINARY(header[i]));
 	}
 	char a = 0b00000001;
-	printf("%d\n", getBit(a, 3));
-	setBits(&a, 0b1, 2);
+	printf("%d\n", BitOperations::getBit(a, 3));
+	BitOperations::setBits(&a, 0b1, 2);
 	printf("%d", a);
 	char znak;
 	scanf("%c", &znak);

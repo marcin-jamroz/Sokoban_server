@@ -1,20 +1,32 @@
 ﻿#pragma once
-enum RequestMethod {
-	EMPTY = 0,
-	GET = 1,
-	POST = 2,
-	PUT = 3,
-	DELETE = 4
-};
-enum ResponseCode {
-	REQUEST = 0,
-	SUCCESS = 2,
-	CLIENT_ERROR = 4,
-	SERVER_ERROR = 5
-};
-enum MessageType {
-	CON = 0, NON = 1, ACK = 2, RST = 3
-};
+// statyczna klasa udostępniająca metody i stałe do obsługi wiadomości protokołu CoAP
+class CoAP {
+public:
+/*	static class Time {
 
-// Funkcja ustawiająca nagłówek wiadomości CoAP
-void setHeader(char * header, int versionNo, MessageType msgType, int tokenLength, ResponseCode code, int codeDetails, char msgId[]);
+	};
+
+*/
+	static class RequestMethod {
+	public:
+		static const char EMPTY = 0;
+		static const char GET = 1;
+		static const char POST = 2;
+		static const char PUT = 3;
+		static const char DELETE = 4;
+	};
+	static class ResponseCode {
+	public:
+		static const char REQUEST = 0;
+		static const char SUCCESS = 2;
+		static const char CLIENT_ERROR = 4;
+		static const char SERVER_ERROR = 5;
+	};
+	static class MessageType {
+	public:
+		static const char CON = 0, NON = 1, ACK = 2, RST = 3;
+	};
+	// Funkcja ustawiająca nagłówek wiadomości CoAP
+	void static setHeader(char * header, int versionNo, char msgType, int tokenLength, char code, int codeDetails, char msgId[]);
+	void setToken(char *coapMessage, char token[]);
+};
