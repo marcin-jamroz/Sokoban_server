@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "bitOperations.h"
 #include "coap.h"
+#include "List.h"
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
@@ -26,15 +27,22 @@ int main()
 	char len = 3;
 	char code = CoAP::ResponseCode::SERVER_ERROR;
 	int details = 1;
-	CoAP::setHeader(header, version, msgType, len, code, details, "01");
+	CoAP::setHeader(header, version, msgType, len, code, details, 15);
 	for (int i = 0; i < 4; i++) {
 		printf("header[%d]: ", i);
 		printf(BYTE_TO_BINARY_PATTERN "\n", BYTE_TO_BINARY(header[i]));
 	}
+
+	printf("\nBit Operations TEST\n");
 	char a = 0b00000001;
 	printf("%d\n", BitOperations::getBit(a, 3));
 	BitOperations::setBits(&a, 0b1, 2);
 	printf("%d", a);
+
+	printf("\nLista\n");
+	List<int> list = List<int>();
+	list.add(4);
+	list.add(3);
 	char znak;
 	scanf("%c", &znak);
 	return 0;

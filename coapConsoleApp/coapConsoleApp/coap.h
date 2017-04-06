@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <stdint.h>
 // statyczna klasa udostępniająca metody i stałe do obsługi wiadomości protokołu CoAP
 class CoAP {
 public:
@@ -27,6 +28,9 @@ public:
 		static const char CON = 0, NON = 1, ACK = 2, RST = 3;
 	};
 	// Funkcja ustawiająca nagłówek wiadomości CoAP
-	void static setHeader(char * header, int versionNo, char msgType, int tokenLength, char code, int codeDetails, char msgId[]);
+	void static setHeader(char * header, int versionNo, char msgType, int tokenLength, char code, int codeDetails, uint16_t msgId);
+	// Funkcja generująca Message ID wiadomości CoAP
+	//uint16_t static generateMsgId();
+	// Fu
 	void setToken(char *coapMessage, char token[]);
 };

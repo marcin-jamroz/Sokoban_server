@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include "coap.h"
 #include "bitOperations.h"
-void CoAP::setHeader(char * header, int versionNo, char msgType, int tokenLength, char code, int codeDetails, char msgId[]) {
+void CoAP::setHeader(char * header, int versionNo, char msgType, int tokenLength, char code, int codeDetails, uint16_t msgId) {
 		/*
 		Format nag³ówka wiadomoœci CoAP:
 		0                   1                   2                   3
@@ -17,18 +17,15 @@ void CoAP::setHeader(char * header, int versionNo, char msgType, int tokenLength
 		BitOperations::setBits(byte, versionNo, 6); // ustawia wersje protokolu na 6 bicie od prawej
 		BitOperations::setBits(byte, msgType, 4);
 		BitOperations::setBits(byte, tokenLength, 0);
-		/// printf("byte1: " BYTE_TO_BINARY_PATTERN "\n", BYTE_TO_BINARY(*byte));
 
 		byte = &header[1];
 		BitOperations::setBits(byte, code, 5);
 		BitOperations::setBits(byte, codeDetails, 0);
 		/// printf("byte2: " BYTE_TO_BINARY_PATTERN "\n", BYTE_TO_BINARY(*byte));
 
-		header[2] = msgId[0];
-		header[3] = msgId[1];
-		/// printf("msgID: " BYTE_TO_BINARY_PATTERN" " BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(msgId[0]), BYTE_TO_BINARY(msgId[1]));
+		header[2] = msgId;
 	}
 
-	void CoAP::setToken(char *coapMessage, char token[]) {
+	/*void CoAP::setToken() {
 
-	}
+	}*/
