@@ -1,6 +1,5 @@
 
 
-#include "Arduino.h"
 #include "BitOperations.h"
 
 // Funkcja zwracająca reprezentację bitu z tablicy bajtow (char - 1 bajt)

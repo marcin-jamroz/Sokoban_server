@@ -9,30 +9,29 @@ public:
 	};
 
 */
-	static class RequestMethod {
+	class RequestMethod {
 	public:
-		static const char EMPTY = 0;
-		static const char GET = 1;
-		static const char POST = 2;
-		static const char PUT = 3;
-		static const char DELETE = 4;
+		static const unsigned char EMPTY = 0;
+		static const unsigned char GET = 1;
+		static const unsigned char POST = 2;
+		static const unsigned char PUT = 3;
+		static const unsigned char DELETE = 4;
 	};
-	static class ResponseCode {
+	class ResponseCode {
 	public:
-		static const char REQUEST = 0;
-		static const char SUCCESS = 2;
-		static const char CLIENT_ERROR = 4;
-		static const char SERVER_ERROR = 5;
+		static const unsigned char REQUEST = 0;
+		static const unsigned char SUCCESS = 2;
+		static const unsigned char CLIENT_ERROR = 4;
+		static const unsigned char SERVER_ERROR = 5;
 	};
-	static class MessageType {
+	class MessageType {
 	public:
-		static const char CON = 0, NON = 1, ACK = 2, RST = 3;
+		static const unsigned char CON = 0, NON = 1, ACK = 2, RST = 3;
 	};
 	// Funkcja ustawiająca nagłówek wiadomości CoAP
-	static void setHeader(char * header, int versionNo, char msgType, int tokenLength, char code, int codeDetails, uint16_t msgId);
+	static void setHeader(unsigned char * header, int versionNo, unsigned char msgType, int tokenLength, unsigned char code, int codeDetails, char msgId[]);
 	// Funkcja generująca Message ID wiadomości CoAP
 	//uint16_t static generateMsgId();
-	// Fu
-	static void setToken(char *coapMessage, char token[]);
+	static void setToken(unsigned char *coapMessage, unsigned char token[]);
 };
 #endif

@@ -1,7 +1,6 @@
 #ifndef BitOperations_h
 #define BitOperations_h
 
-#include "Arduino.h"
 
 
 class BitOperations {
