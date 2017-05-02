@@ -3,13 +3,14 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
+#include <CoapMessage.h>
 
 #define MAX_BUFFER 60
 
 
 
 byte mac[] = {0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf80};
-
+byte ip [] = {192, 168, 0, 200};
 EthernetUDP Udp;
 short localPort = 1242;
 
@@ -17,6 +18,7 @@ char packetBuffer[MAX_BUFFER];
 
 RF24 radio(7, 8);
 RF24Network network(radio);
+CoapMessage coapMessage;
 
 uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 00;
@@ -42,39 +44,69 @@ void setup() {
   SPI.begin();
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
-  Ethernet.begin(mac);
+  Ethernet.begin(mac, ip);
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
 
 }
 
+
+
+
+
+
 void loop() {
 
-int packetSize = Udp.parsePacket();
+
+  //==============UDP COAP COMMUNICATION =================
+  //nasłuchuje na pakiety udp coapa
+  int packetSize = Udp.parsePacket();
   if (packetSize)
   {
     Serial.print("Jestem w if, packetSize=");
     Serial.println(packetSize);
-
     Udp.read(packetBuffer, MAX_BUFFER);
+    sendRequestViaRadio(packetBuffer[0] - '0');
 
-    sendRequest(packetBuffer[0]-'0');
+    //1. parsowanie wiadomosci COAP. (sprawdzenie czy poprawna struktura wiadomosci, payload, nagłówek, opcje)
+    //2. reakcja zależna od wiadomosci - ogólnie komunikacja z lampką drogą radiową, pobranie danych, zmiana statusu lamplki itp
+    //3. wysłanie poprawnej odpowiedzi coap - uprzednie stworzenie, headery itp itp
+    //zapis tokena dla wiadomosci, bo musi  byc w odpowiedzi taki sam
+
+    coapMessage.parse(packetBuffer, packetSize);
+
+    if (coapMessage.getMessageType() == CoapMessage::RequestMethod::GET) {
+      handleGetRequest(coapMessage);
+    }
+
+    if (coapMessage.getMessageType() == CoapMessage::RequestMethod::PUT) {
+      handlePutRequest(coapMessage);
+    }
+    
   }
- 
-  network.update();
 
-  // Nasłuchuje na wiadomości od CoAP-resource
+
+
+
+  //===========RADIO COMMUNICATION =======================
+  // Nasłuchuje na wiadomości radiowe od CoAP-resource (poziom potencjometru, status lampki)
+  network.update();
   while (network.available()) {
     Serial.println("Odebrano");
     struct Response message;
     RF24NetworkHeader header;
     network.read(header, &message, sizeof(struct Response));
     Serial.println(message.option, DEC);
-    handleRequest(message.option, message.value);
+    handleRadioRequest(message.option, message.value);
   }
 }
 
-void handleRequest(short option, short value) {
+
+
+//=========FUNCTIONS =================
+
+//=======RADIO=======
+void handleRadioRequest(short option, short value) {
 
   if (option == LampStatus) {
     Serial.println(value);
@@ -85,7 +117,7 @@ void handleRequest(short option, short value) {
   }
 }
 
-void sendRequest(short option) {
+void sendRequestViaRadio(short option) {
   RF24NetworkHeader header(01);
   struct Request request;
 
@@ -93,6 +125,16 @@ void sendRequest(short option) {
 
   network.write(header, &request, sizeof(request));
 }
+
+
+//======COAP==========
+  void handleGetRequest(CoapMessage coapMessage) {
+
+  }
+
+  void handlePutRequest(CoapMessage coapMessage) {
+
+  }
 
 
 
