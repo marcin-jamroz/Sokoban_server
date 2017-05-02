@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "CoapMessageLib.h"
-#include <BitOperations.h>
+#include "BitOperations.h"
 bool CoapMessageLib::parseHeader(unsigned char * header)
 {
 	/* header_1stByte = header[0];
@@ -47,7 +47,7 @@ bool CoapMessageLib::parse(unsigned char msg[], int length)
 			if (msg[position++] == 0b11111111) { // sprawdzenie czy nie wystêpuje znacznik payloada
 				payload = new unsigned char[length - position + 1];
 				memcpy(payload, &msg[position], length - position);
-				payload[length - position] = 0;	// ostatni bit '\0' czy powinien tu byæ ??????					!!!!!!!!
+				payload[length - position] = 0;
 				position += length - position;
 				
 			}
