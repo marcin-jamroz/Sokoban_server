@@ -27,8 +27,8 @@ private:
 	unsigned char * options = nullptr;
 	unsigned char * payload = nullptr;
 
-	String uriHost, uriPath, accept, contentFormat;
-	uint8_t uriPort;
+	String uriHost, uriPath;
+	uint8_t uriPort, accept, contentFormat;
 
 	bool parseHeader(unsigned char * header);
 	//parsuje wiadomosci otrzymuj¹c wskaŸnik wiadomoœci oraz pozycjê pocz¹tku opcji
