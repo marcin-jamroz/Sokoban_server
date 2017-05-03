@@ -148,21 +148,24 @@ bool CoapMessage::parseHeader(unsigned char * header)
 }
 
 bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) {
-	unsigned int previousDelta = 0;
+	unsigned int previousOptionNumber = 0; // poprzednia delta dla pierwszego to zero
 	
+	//dopóki nie skoñcz¹ siê opcje (nie zacznie payload) wczytuj opcje
 	while (message[position] && message[position] == 0b11111111)
 	{
 		
-		unsigned int optionDelta = (message[position] >> 4) - previousDelta;
-		unsigned int optionLength = message[position++] & 0b00001111;
-		previousDelta = optionDelta;
+		unsigned int optionDelta = message[position] >> 4;// delta obecnej opcji
+		unsigned int optionLength = message[position++] & 0b00001111;	//d³ugoœæ wartoœci opcji 
 		
+		unsigned int optionNumber = optionDelta + previousOptionNumber;
 		
-
-		switch (optionDelta)
+		previousOptionNumber = optionNumber;
+		
+	
+		switch (optionNumber)
 		{
 		case OptionNumber::URI_HOST:
-			memcpy(&uriHost, &message[position], optionLength);
+			memcpy(&uriHost, &message[position], optionLength);//kopiowanie bitów wartoœci opcji do odpowiedniej zmiennej obiektu CoapMessage 
 			break;
 		case OptionNumber::URI_PORT:
 			memcpy(&uriPort, &message[position], optionLength);
