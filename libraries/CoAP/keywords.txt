@@ -1,3 +1,0 @@
-CoAP   KEYWORD1
-getBit          KEYWORD2
-setBits         KEYWORD3
