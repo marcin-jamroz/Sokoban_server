@@ -40,13 +40,11 @@ bool CoapMessage::parse(unsigned char msg[], int length)
 	return false;
 }
 
-unsigned char* CoapMessage::toPacket() {
-	unsigned char* header = createHeader(token, msgType, codeClass, codeDetails, msgId[]);
-}
+//unsigned char* CoapMessage::toPacket() {
+//	unsigned char* header = createHeader(token, msgType, codeClass, codeDetails, msgId[]);
+//}
 
-unsigned char* CoapMessage::createHeader(unsigned char token, unsi
-	
-	gned char msgType, unsigned char codeClass, unsigned char codeDetails, unsigned char msgId[]) {
+unsigned char* CoapMessage::createHeader(unsigned char token, unsigned char msgType, unsigned char codeClass, unsigned char codeDetails, unsigned char msgId[]) {
 	/*
 	Format nag³ówka wiadomoœci CoAP:
 	 0                   1                   2                   3
@@ -56,7 +54,7 @@ unsigned char* CoapMessage::createHeader(unsigned char token, unsi
 	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	*/
 
-	unsigned char header[4] = { 0 }; //ca³y  nag³ówek CoAPa ma 4 bajty (32 bity)
+	unsigned char* header = new unsigned char[4]; //ca³y  nag³ówek CoAPa ma 4 bajty (32 bity)
 	unsigned char * bytePointer = &header[0]; //wskaŸnik na pierwszy bajt
 
 	// Funkcja setBits numeruje bity od prawej tzn 1110 to 0 jest bitem numer 0 
@@ -100,6 +98,10 @@ uint8_t CoapMessage::getTokenLength()
 	return tokenLength;
 }
 
+void CoapMessage::getUriPath(String &dest)
+{
+	dest = uriPath;
+}
 
 
 
@@ -128,27 +130,32 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) 
 	unsigned int previousOptionNumber = 0; // poprzednia delta dla pierwszego to zero
 	
 	//dopóki nie skoñcz¹ siê opcje (nie zacznie payload) wczytuj opcje
-	while (message[position] && message[position] == 0b11111111)
+	while (message[position] && message[position] != 0b11111111)
 	{
 		
 		unsigned int optionDelta = message[position] >> 4;// delta obecnej opcji
 		unsigned int optionLength = message[position++] & 0b00001111;	//d³ugoœæ wartoœci opcji 
+	
+		
 		
 		unsigned int optionNumber = optionDelta + previousOptionNumber;
 		
 		previousOptionNumber = optionNumber;
 		
+	//	Serial.print("OptionDelta=");
+	//	Serial.println(optionDelta);
+		//Serial.print("OptionNumber=");
+		//Serial.println(optionNumber);
+	//	Serial.print("OptionLength=");
+	//	Serial.println(optionLength);
 	
 		switch (optionNumber)
 		{
-		case CoapUtils::OptionNumber::URI_HOST:
-			memcpy(&uriHost, &message[position], optionLength);//kopiowanie bitów wartoœci opcji do odpowiedniej zmiennej obiektu CoapMessage 
-			break;
-		case CoapUtils::OptionNumber::URI_PORT:
-			memcpy(&uriPort, &message[position], optionLength);
-			break;
 		case CoapUtils::OptionNumber::URI_PATH:
-			memcpy(&uriPath, &message[position], optionLength);
+			//memcpy(&uriPath, &message[position], optionLength);
+			for(int i =0; i<optionLength;i++){
+			uriPath += String(message[position+i]);
+			}
 			break;
 		case CoapUtils::OptionNumber::ACCEPT:
 			memcpy(&accept, &message[position], optionLength);
@@ -164,6 +171,5 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) 
 
 CoapMessage::~CoapMessage() {
 	if (token) delete token;
-	if (options) delete options;
 	if (payload) delete payload;
 }

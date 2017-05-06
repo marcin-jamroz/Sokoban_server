@@ -27,7 +27,7 @@ private:
 	unsigned char * payload = nullptr;
 
 	uint8_t payloadLength;
-	uint8_t tokenLength;
+	//uint8_t tokenLength;
 
 
 	//uri_path - np. "lampka"
@@ -47,10 +47,10 @@ public:
 
 	//funkcja ustawia header wiadomosci coap
 	void setHeader(unsigned char token, unsigned char msgType, unsigned char codeClass, int codeDetails, char msgId[]);
-
+unsigned char* createHeader(unsigned char token, unsigned char msgType, unsigned char codeClass, unsigned char codeDetails, unsigned char msgId[]);
 
 	// Funkcja tworz¹ca pakiet z wiadomoœci CoAP. Trzeba pamiêtaæ o zwolnieniu pamiêci gdy skoñczy siê z nim pracê;
-	char* toPacket();
+	unsigned char* toPacket();
 	// Zwraca wersjê CoAPa
 	uint8_t getCoapVersion();
 	// Zwraca typ wiadomoœci
@@ -61,6 +61,8 @@ public:
 	uint8_t getCodeDetails();
 	// Zwraca dlugosc tokena
 	uint8_t getTokenLength();
+	// Zwraca UriPath
+	void getUriPath(String &dest);
 	// destruktor obiektu
 
 	~CoapMessage();

@@ -4,21 +4,24 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 #include <CoapMessage.h>
+#include <CoapUtils.h>
 
 #define MAX_BUFFER 60
 
 
 
-byte mac[] = {0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf80};
+byte mac[] = {0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf8};
 byte ip [] = {192, 168, 0, 200};
 EthernetUDP Udp;
-short localPort = 1242;
+short localPort = 5683;
 
 char packetBuffer[MAX_BUFFER];
 
 RF24 radio(7, 8);
 RF24Network network(radio);
+
 CoapMessage coapMessage;
+
 
 uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 00;
@@ -63,25 +66,32 @@ void loop() {
   int packetSize = Udp.parsePacket();
   if (packetSize)
   {
-    Serial.print("Jestem w if, packetSize=");
+    Serial.print("Jestem w  , packetSize=");
     Serial.println(packetSize);
     Udp.read(packetBuffer, MAX_BUFFER);
-    sendRequestViaRadio(packetBuffer[0] - '0');
+ //   sendRequestViaRadio(packetBuffer[0] - '0');
 
     //1. parsowanie wiadomosci COAP. (sprawdzenie czy poprawna struktura wiadomosci, payload, nagłówek, opcje)
     //2. reakcja zależna od wiadomosci - ogólnie komunikacja z lampką drogą radiową, pobranie danych, zmiana statusu lamplki itp
     //3. wysłanie poprawnej odpowiedzi coap - uprzednie stworzenie, headery itp itp
     //zapis tokena dla wiadomosci, bo musi  byc w odpowiedzi taki sam
 
-    coapMessage.parse(packetBuffer, packetSize);
-
-    if (coapMessage.getMessageType() == CoapMessage::RequestMethod::GET) {
+unsigned char* packet = new unsigned char[packetSize];
+memcpy(packet, packetBuffer, packetSize);
+    coapMessage.parse(packet, packetSize);
+    Serial.println(packet[0]);
+    Serial.println(packet[1]);
+    Serial.println(packet[2]);
+    Serial.println(packet[3]);
+    
+  //handleGetRequest(coapMessage);
+    if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
       handleGetRequest(coapMessage);
     }
-
-    if (coapMessage.getMessageType() == CoapMessage::RequestMethod::PUT) {
-      handlePutRequest(coapMessage);
-    }
+//
+//    if (coapMessage.getMessageType() == CoapUtils::RequestMethod::PUT) {
+//      handlePutRequest(coapMessage);
+//    }
     
   }
 
@@ -129,11 +139,26 @@ void sendRequestViaRadio(short option) {
 
 //======COAP==========
   void handleGetRequest(CoapMessage coapMessage) {
-
+showDebug(coapMessage);
   }
 
   void handlePutRequest(CoapMessage coapMessage) {
 
+  }
+
+  void showDebug(CoapMessage coapMessage){
+    Serial.println(coapMessage.getCoapVersion());
+    Serial.println(coapMessage.getMessageType());
+      Serial.println(coapMessage.getTokenLength());
+    Serial.println(coapMessage.getCodeClass());
+    Serial.println(coapMessage.getCodeDetails());
+
+    String uriPath;
+    coapMessage.getUriPath(uriPath);
+    Serial.print("UriPath = ");
+    Serial.println(uriPath);
+  
+    
   }
 
 
