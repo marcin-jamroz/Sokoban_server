@@ -38,7 +38,7 @@ private:
 
 	bool parseHeader(unsigned char * header);
 	//parsuje wiadomosci otrzymuj¹c wskaŸnik wiadomoœci oraz pozycjê pocz¹tku opcji
-	bool parseOptions(unsigned char * message, unsigned int &position);
+	bool parseOptions(unsigned char * message, unsigned int &position, int length);
 
 public:
 
@@ -64,6 +64,7 @@ unsigned char* createHeader(unsigned char token, unsigned char msgType, unsigned
 	// Zwraca UriPath
 	void getUriPath(String &dest);
 	// destruktor obiektu
+	unsigned char* getToken();
 
 	~CoapMessage();
 };

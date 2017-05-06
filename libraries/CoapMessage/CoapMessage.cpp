@@ -24,15 +24,19 @@ bool CoapMessage::parse(unsigned char msg[], int length)
 			memcpy(token, &msg[position], tokenLength); // kopiowanie z wiadomoœci zawartoœci tokena
 			position += tokenLength;
 		}
-		while (msg[position] && position < length) {
-			if (msg[position++] == 0b11111111) { // sprawdzenie czy nie wystêpuje znacznik payloada
+		while ( position < length) {
+			
+			
+			
+			if (msg[position] == 0b11111111) { // sprawdzenie czy nie wystêpuje znacznik payloada
+				position++;
 				payloadLength = length - position;
 				payload = new unsigned char[payloadLength];
 				memcpy(payload, &msg[position], payloadLength);
 				position += length - position;
 			}
 			else {
-				parseOptions(msg, position);
+				parseOptions(msg, position, length);
 			}
 		}
 		return true;
@@ -103,6 +107,10 @@ void CoapMessage::getUriPath(String &dest)
 	dest = uriPath;
 }
 
+unsigned char* CoapMessage::getToken()
+{
+	return token;
+}
 
 
 // =============================funckje prywatne  =============================
@@ -126,16 +134,20 @@ bool CoapMessage::parseHeader(unsigned char * header)
 	return true;
 }
 
-bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) {
+bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, int length) {
 	unsigned int previousOptionNumber = 0; // poprzednia delta dla pierwszego to zero
 	
 	//dopóki nie skoñcz¹ siê opcje (nie zacznie payload) wczytuj opcje
-	while (message[position] && message[position] != 0b11111111)
+	while (position < length  && message[position] != 0b11111111)
 	{
 		
-		unsigned int optionDelta = message[position] >> 4;// delta obecnej opcji
-		unsigned int optionLength = message[position++] & 0b00001111;	//d³ugoœæ wartoœci opcji 
 	
+	unsigned int optionDelta = message[position] >> 4;// delta obecnej opcji
+	//	Serial.print("optionDelta=");
+	//	Serial.println(message[position],HEX);
+
+	unsigned int optionLength = message[position++] & 0b00001111;	//d³ugoœæ wartoœci opcji 
+
 		
 		
 		unsigned int optionNumber = optionDelta + previousOptionNumber;
@@ -144,17 +156,17 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) 
 		
 	//	Serial.print("OptionDelta=");
 	//	Serial.println(optionDelta);
-		//Serial.print("OptionNumber=");
-		//Serial.println(optionNumber);
-	//	Serial.print("OptionLength=");
-	//	Serial.println(optionLength);
+		Serial.print("OptionNumber=");
+		Serial.println(optionNumber);
+		Serial.print("OptionLength=");
+		Serial.println(optionLength);
 	
 		switch (optionNumber)
 		{
 		case CoapUtils::OptionNumber::URI_PATH:
 			//memcpy(&uriPath, &message[position], optionLength);
 			for(int i =0; i<optionLength;i++){
-			uriPath += String(message[position+i]);
+			uriPath = String(uriPath + (char)message[position+i]);
 			}
 			break;
 		case CoapUtils::OptionNumber::ACCEPT:
@@ -166,10 +178,12 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) 
 		}
 		position += optionLength;
 	}
+	Serial.println("Wyszedlem z while z parseOptions");
 }
 
 
 CoapMessage::~CoapMessage() {
+	Serial.println("Destruktor on");
 	if (token) delete token;
 	if (payload) delete payload;
 }

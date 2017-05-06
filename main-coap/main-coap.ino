@@ -20,7 +20,6 @@ char packetBuffer[MAX_BUFFER];
 RF24 radio(7, 8);
 RF24Network network(radio);
 
-CoapMessage coapMessage;
 
 
 uint8_t OUR_CHANNEL = 120;
@@ -69,30 +68,34 @@ void loop() {
     Serial.print("Jestem w  , packetSize=");
     Serial.println(packetSize);
     Udp.read(packetBuffer, MAX_BUFFER);
- //   sendRequestViaRadio(packetBuffer[0] - '0');
+    //   sendRequestViaRadio(packetBuffer[0] - '0');
 
     //1. parsowanie wiadomosci COAP. (sprawdzenie czy poprawna struktura wiadomosci, payload, nagłówek, opcje)
     //2. reakcja zależna od wiadomosci - ogólnie komunikacja z lampką drogą radiową, pobranie danych, zmiana statusu lamplki itp
     //3. wysłanie poprawnej odpowiedzi coap - uprzednie stworzenie, headery itp itp
     //zapis tokena dla wiadomosci, bo musi  byc w odpowiedzi taki sam
 
-unsigned char* packet = new unsigned char[packetSize];
-memcpy(packet, packetBuffer, packetSize);
+    unsigned char* packet = new unsigned char[packetSize];
+    memcpy(packet, packetBuffer, packetSize);
+    CoapMessage coapMessage;
     coapMessage.parse(packet, packetSize);
     Serial.println(packet[0]);
     Serial.println(packet[1]);
     Serial.println(packet[2]);
     Serial.println(packet[3]);
-    
-  //handleGetRequest(coapMessage);
+
+    //handleGetRequest(coapMessage);
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
       handleGetRequest(coapMessage);
+      Serial.flush();
+      delay(100);
+      Serial.println("wyszedlem z handleReq");
     }
-//
-//    if (coapMessage.getMessageType() == CoapUtils::RequestMethod::PUT) {
-//      handlePutRequest(coapMessage);
-//    }
-    
+    //
+    //    if (coapMessage.getMessageType() == CoapUtils::RequestMethod::PUT) {
+    //      handlePutRequest(coapMessage);
+    //    }
+
   }
 
 
@@ -138,28 +141,36 @@ void sendRequestViaRadio(short option) {
 
 
 //======COAP==========
-  void handleGetRequest(CoapMessage coapMessage) {
-showDebug(coapMessage);
+void handleGetRequest(CoapMessage &coapMessage) {
+  showDebug(coapMessage);
+    Serial.println("Koniec handleReq");
+}
+
+void handlePutRequest(CoapMessage coapMessage) {
+
+}
+
+void showDebug(CoapMessage &coapMessage) {
+  Serial.println(coapMessage.getCoapVersion());
+  Serial.println(coapMessage.getMessageType());
+  Serial.println(coapMessage.getTokenLength());
+  Serial.println(coapMessage.getCodeClass());
+  Serial.println(coapMessage.getCodeDetails());
+
+  Serial.print("token=");
+  unsigned char* token = coapMessage.getToken();
+  for (int i = 0; i < coapMessage.getTokenLength(); i++)
+  {
+    Serial.println(token[i], HEX);
   }
 
-  void handlePutRequest(CoapMessage coapMessage) {
+  String uriPath;
+  coapMessage.getUriPath(uriPath);
+  Serial.print("UriPath = ");
+  Serial.println(uriPath);
+  Serial.println("Koniec showDebug");
 
-  }
-
-  void showDebug(CoapMessage coapMessage){
-    Serial.println(coapMessage.getCoapVersion());
-    Serial.println(coapMessage.getMessageType());
-      Serial.println(coapMessage.getTokenLength());
-    Serial.println(coapMessage.getCodeClass());
-    Serial.println(coapMessage.getCodeDetails());
-
-    String uriPath;
-    coapMessage.getUriPath(uriPath);
-    Serial.print("UriPath = ");
-    Serial.println(uriPath);
-  
-    
-  }
+}
 
 
 
