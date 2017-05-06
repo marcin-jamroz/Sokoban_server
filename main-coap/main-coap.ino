@@ -87,14 +87,12 @@ void loop() {
     //handleGetRequest(coapMessage);
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
       handleGetRequest(coapMessage);
-      Serial.flush();
-      delay(100);
       Serial.println("wyszedlem z handleReq");
     }
-    //
-    //    if (coapMessage.getMessageType() == CoapUtils::RequestMethod::PUT) {
-    //      handlePutRequest(coapMessage);
-    //    }
+
+    if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::PUT) {
+      handlePutRequest(coapMessage);
+    }
 
   }
 
@@ -143,11 +141,18 @@ void sendRequestViaRadio(short option) {
 //======COAP==========
 void handleGetRequest(CoapMessage &coapMessage) {
   showDebug(coapMessage);
-    Serial.println("Koniec handleReq");
+  Serial.println("Koniec handleReq");
 }
 
-void handlePutRequest(CoapMessage coapMessage) {
-
+void handlePutRequest(CoapMessage &coapMessage) {
+  showDebug(coapMessage);
+  Serial.print("payload=");
+  unsigned char* payload = coapMessage.getPayload();
+  for (int i = 0; i < coapMessage.getPayloadLength(); i++)
+  {
+    Serial.print((char)payload[i]);
+  }
+  
 }
 
 void showDebug(CoapMessage &coapMessage) {

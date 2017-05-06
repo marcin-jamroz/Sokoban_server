@@ -112,6 +112,15 @@ unsigned char* CoapMessage::getToken()
 	return token;
 }
 
+unsigned char* CoapMessage::getPayload()
+{
+	return payload;
+}
+
+uint8_t CoapMessage::getPayloadLength(){
+	return payloadLength;
+}
+
 
 // =============================funckje prywatne  =============================
 bool CoapMessage::parseHeader(unsigned char * header)

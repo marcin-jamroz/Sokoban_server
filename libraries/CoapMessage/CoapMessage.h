@@ -61,11 +61,16 @@ unsigned char* createHeader(unsigned char token, unsigned char msgType, unsigned
 	uint8_t getCodeDetails();
 	// Zwraca dlugosc tokena
 	uint8_t getTokenLength();
+	// Zwraca dlugosc payloadu
+	uint8_t getPayloadLength();
 	// Zwraca UriPath
 	void getUriPath(String &dest);
-	// destruktor obiektu
+	// Zwraca payload	
+	unsigned char* getPayload();
+	
 	unsigned char* getToken();
 
+	// destruktor obiektu
 	~CoapMessage();
 };
 
