@@ -33,6 +33,7 @@ void setup() {
   pinMode(3, OUTPUT);
 }
 
+
 void loop() {
 
   network.update();
@@ -64,8 +65,8 @@ void handleRequest(short option) {
 
   if (option == PotStatus) {
     short potentiometerValue = analogRead(0);
-    Serial.println(potentiometerValue,DEC);
-    sendResponse(PotStatus,potentiometerValue);
+    Serial.println(potentiometerValue, DEC);
+    sendResponse(PotStatus, potentiometerValue);
   }
 }
 

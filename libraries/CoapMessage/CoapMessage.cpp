@@ -8,7 +8,7 @@
 
 #include "CoapMessage.h"
 #include <BitOperations.h>
-
+#include "CoapUtils.h"
 
 
 bool CoapMessage::parse(unsigned char msg[], int length)
@@ -26,9 +26,9 @@ bool CoapMessage::parse(unsigned char msg[], int length)
 		}
 		while (msg[position] && position < length) {
 			if (msg[position++] == 0b11111111) { // sprawdzenie czy nie wystêpuje znacznik payloada
-				payload = new unsigned char[length - position + 1];
-				memcpy(payload, &msg[position], length - position);
-				payload[length - position] = 0;
+				payloadLength = length - position;
+				payload = new unsigned char[payloadLength];
+				memcpy(payload, &msg[position], payloadLength);
 				position += length - position;
 			}
 			else {
@@ -40,63 +40,40 @@ bool CoapMessage::parse(unsigned char msg[], int length)
 	return false;
 }
 
+unsigned char* CoapMessage::toPacket() {
+	unsigned char* header = createHeader(token, msgType, codeClass, codeDetails, msgId[]);
+}
 
-
-
-void CoapMessage::setHeader(unsigned char * header, int versionNo, unsigned char msgType, int tokenLength, unsigned char code, int codeDetails, char msgId[]) {
+unsigned char* CoapMessage::createHeader(unsigned char token, unsi
+	
+	gned char msgType, unsigned char codeClass, unsigned char codeDetails, unsigned char msgId[]) {
 	/*
 	Format nag³ówka wiadomoœci CoAP:
-	0                   1                   2                   3
-	0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+	 0                   1                   2                   3
+	 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	|Ver| T |  TKL  |      Code     |          Message ID           |
 	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	*/
-	unsigned char headerTmp[4] = { 0 }; // nag³ówek CoAPa ma 4 bajty (32 bity)
-	unsigned char * byte = &header[0];
-	// Funkcja setBits numeruje bity od prawej tzn 1110 to 0 jest bitem numer 0 
-	BitOperations::setBits(byte, versionNo, 6); // ustawia wersje protokolu na 6 bicie od prawej
-	BitOperations::setBits(byte, msgType, 4);
-	BitOperations::setBits(byte, tokenLength, 0);
 
-	byte = &header[1];
-	BitOperations::setBits(byte, code, 5);
-	BitOperations::setBits(byte, codeDetails, 0);
-	/// printf("byte2: " BYTE_TO_BINARY_PATTERN "\n", BYTE_TO_BINARY(*byte));
+	unsigned char header[4] = { 0 }; //ca³y  nag³ówek CoAPa ma 4 bajty (32 bity)
+	unsigned char * bytePointer = &header[0]; //wskaŸnik na pierwszy bajt
+
+	// Funkcja setBits numeruje bity od prawej tzn 1110 to 0 jest bitem numer 0 
+	BitOperations::setBits(bytePointer, coapVersion, 6); // ustawia wersje protokolu na 6 bicie od prawej
+	BitOperations::setBits(bytePointer, msgType, 4);//ustawienie 2 bitów od czwartego jako msgType
+	BitOperations::setBits(bytePointer, tokenLength, 0);//ustawienie d³ugoœci tokena TKL
+
+	bytePointer = &header[1];//przejœcie na kolejny bajt
+	BitOperations::setBits(bytePointer, codeClass, 5);
+	BitOperations::setBits(bytePointer, codeDetails, 0);
 
 	header[2] = msgId[0];
 	header[3] = msgId[1];
+
+	return header;
 }
 
-
-
-
-char * CoapMessage::toPacket()
-{
-	// Nag³ówek
-	/*
-	Format nag³ówka wiadomoœci CoAP:
-	0                   1                   2                   3
-	0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-	|Ver| T |  TKL  |      Code     |          Message ID           |
-	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-	*/
-	unsigned char headerTmp[4] = { 0 }; // nag³ówek CoAPa ma 4 bajty (32 bity)
-	unsigned char * byte = &headerTmp[0];
-	// Funkcja setBits numeruje bity od prawej tzn 1110 to 0 jest bitem numer 0 
-	BitOperations::setBits(byte, coapVersion, 6); // ustawia wersje protokolu na 6 bicie od prawej
-	BitOperations::setBits(byte, msgType, 4);
-	BitOperations::setBits(byte, tokenLength, 0);
-
-	byte = &headerTmp[1];
-	BitOperations::setBits(byte, codeClass, 5);
-	BitOperations::setBits(byte, codeDetails, 0);
-	/// printf("byte2: " BYTE_TO_BINARY_PATTERN "\n", BYTE_TO_BINARY(*byte));
-
-	headerTmp[2] = messageID[0];
-	headerTmp[3] = messageID[1];
-}
 
 uint8_t CoapMessage::getCoapVersion()
 {
@@ -164,19 +141,19 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position) 
 	
 		switch (optionNumber)
 		{
-		case OptionNumber::URI_HOST:
+		case CoapUtils::OptionNumber::URI_HOST:
 			memcpy(&uriHost, &message[position], optionLength);//kopiowanie bitów wartoœci opcji do odpowiedniej zmiennej obiektu CoapMessage 
 			break;
-		case OptionNumber::URI_PORT:
+		case CoapUtils::OptionNumber::URI_PORT:
 			memcpy(&uriPort, &message[position], optionLength);
 			break;
-		case OptionNumber::URI_PATH:
+		case CoapUtils::OptionNumber::URI_PATH:
 			memcpy(&uriPath, &message[position], optionLength);
 			break;
-		case OptionNumber::ACCEPT:
+		case CoapUtils::OptionNumber::ACCEPT:
 			memcpy(&accept, &message[position], optionLength);
 			break;
-		case OptionNumber::CONTENT_FORMAT:
+		case CoapUtils::OptionNumber::CONTENT_FORMAT:
 			memcpy(&contentFormat, &message[position], optionLength);
 			break;
 		}
