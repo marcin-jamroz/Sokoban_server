@@ -5,6 +5,7 @@
 #include <EthernetUdp.h>
 #include <CoapMessage.h>
 #include <CoapUtils.h>
+#include <DebugUtils.h>
 
 #define MAX_BUFFER 60
 
@@ -46,7 +47,7 @@ void setup() {
   SPI.begin();
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
-  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac);
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
 
@@ -65,7 +66,8 @@ void loop() {
   int packetSize = Udp.parsePacket();
   if (packetSize)
   {
-    Serial.print("Jestem w  , packetSize=");
+    Serial.println("Jestem w  , packetSize=");
+    debugVar(&packetSize);
     Serial.println(packetSize);
     Udp.read(packetBuffer, MAX_BUFFER);
     //   sendRequestViaRadio(packetBuffer[0] - '0');
