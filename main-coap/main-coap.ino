@@ -182,10 +182,13 @@ void handleGetRequest(CoapMessage &coapMessage) {
     responseMessage.setContentFormat(40);
     
     // zasoby
-    CoapResource ledLamp = CoapResource("led", "led-lamp-status", "executable", 0, false);
-    CoapResource potentiometer = CoapResource("potentiometer", "potentiometer-status", "sensor", 0, true);
+    CoapResource ledLamp("led", "led-lamp-status", "executable", 0, false);
+    CoapResource potentiometer("potentiometer", "potentiometer-status", "sensor", 0, true);
 
-    String resourcesLinks = String(ledLamp.getCoreLinkFormat() + potentiometer.getCoreLinkFormat());
+String ledLink, potentiometerLink;
+ledLamp.getCoreLinkFormat(ledLink);
+potentiometer.getCoreLinkFormat(potentiometerLink);
+    String resourcesLinks = String(ledLink + potentiometerLink);
 
     unsigned char payload[resourcesLinks.length()];
     resourcesLinks.toCharArray((char[])payload, resourcesLinks.length());
