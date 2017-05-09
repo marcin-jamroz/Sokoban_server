@@ -158,8 +158,16 @@ void handleGetRequest(CoapMessage &coapMessage) {
     uint8_t messageID[] = {200, 200};
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(40);
+    
+    // zasoby
+    CoapResource ledLamp = CoapResource("led", "led-lamp-status", "executable", 0, false);
+    CoapResource potentiometer = CoapResource("potentiometer", "potentiometer-status", "sensor", 0, true);
 
-    unsigned char payload[] = "</Lampka>;rt=\"swiatlo\";ct=0";
+    String resourcesLinks = String(ledLamp.getCoreLinkFormat() + potentiometer.getCoreLinkFormat());
+
+    unsigned char payload[resourcesLinks.length()];
+    resourcesLinks.toCharArray((char[])payload, resourcesLinks.length());
+
     responseMessage.setPayload(payload, sizeof(payload));
 
     int packetLength = 0;
@@ -168,7 +176,7 @@ void handleGetRequest(CoapMessage &coapMessage) {
     Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
     Udp.write(packet, packetLength);
     Udp.endPacket();
-    
+
     delete packet;
   }
 }
@@ -182,7 +190,7 @@ void handlePutRequest(CoapMessage &coapMessage) {
     Serial.print((char)payload[i]);
   }
 
-  sendRequestViaRadio((short)(payload[0]-'0'));
+  sendRequestViaRadio((short)(payload[0] - '0'));
 
 }
 
