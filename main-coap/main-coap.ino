@@ -66,9 +66,10 @@ void loop() {
   int packetSize = Udp.parsePacket();
   if (packetSize)
   {
-    Serial.println("Jestem w  , packetSize=");
+    Serial.flush();
+    // Serial.println("Jestem w  , packetSize=");
     debugVar(&packetSize);
-    Serial.println(packetSize);
+    // Serial.println(packetSize);
     Udp.read(packetBuffer, MAX_BUFFER);
     //   sendRequestViaRadio(packetBuffer[0] - '0');
 
@@ -77,19 +78,21 @@ void loop() {
     //3. wysłanie poprawnej odpowiedzi coap - uprzednie stworzenie, headery itp itp
     //zapis tokena dla wiadomosci, bo musi  byc w odpowiedzi taki sam
 
-    unsigned char* packet = new unsigned char[packetSize];
+    unsigned char * packet = new unsigned char[packetSize];
     memcpy(packet, packetBuffer, packetSize);
+    hexPacket(packet, packetSize);
     CoapMessage coapMessage;
-    coapMessage.parse(packet, packetSize);
-    Serial.println(packet[0]);
-    Serial.println(packet[1]);
-    Serial.println(packet[2]);
-    Serial.println(packet[3]);
+    coapMessage.parse(packet, packetSize, Udp.remoteIP(), Udp.remotePort());
+    delete packet;
+    //  Serial.println(packet[0]);
+    //  Serial.println(packet[1]);
+    //  Serial.println(packet[2]);
+    //  Serial.println(packet[3]);
 
     //handleGetRequest(coapMessage);
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
       handleGetRequest(coapMessage);
-      Serial.println("wyszedlem z handleReq");
+      //    Serial.println("wyszedlem z handleReq");
     }
 
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::PUT) {
@@ -105,11 +108,11 @@ void loop() {
   // Nasłuchuje na wiadomości radiowe od CoAP-resource (poziom potencjometru, status lampki)
   network.update();
   while (network.available()) {
-    Serial.println("Odebrano");
+    //   Serial.println("Odebrano");
     struct Response message;
     RF24NetworkHeader header;
     network.read(header, &message, sizeof(struct Response));
-    Serial.println(message.option, DEC);
+    //   Serial.println(message.option, DEC);
     handleRadioRequest(message.option, message.value);
   }
 }
@@ -142,8 +145,32 @@ void sendRequestViaRadio(short option) {
 
 //======COAP==========
 void handleGetRequest(CoapMessage &coapMessage) {
-  showDebug(coapMessage);
-  Serial.println("Koniec handleReq");
+
+  String uriPath;
+  coapMessage.getUriPath(uriPath);
+  //  showDebug(coapMessage);
+
+
+  // debugVar(uriPath);
+  if (uriPath == ".well-known/core") {
+    Serial.println("odkrywanie zasobow");
+    CoapMessage responseMessage;
+    uint8_t messageID[] = {200, 200};
+    responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
+    responseMessage.setContentFormat(40);
+
+    unsigned char payload[] = "</Lampka>;rt=\"swiatlo\";ct=0";
+    responseMessage.setPayload(payload, sizeof(payload));
+
+    int packetLength = 0;
+    unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+
+    Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
+    Udp.write(packet, packetLength);
+    Udp.endPacket();
+    
+    delete packet;
+  }
 }
 
 void handlePutRequest(CoapMessage &coapMessage) {
@@ -154,17 +181,18 @@ void handlePutRequest(CoapMessage &coapMessage) {
   {
     Serial.print((char)payload[i]);
   }
-  
+
 }
 
 void showDebug(CoapMessage &coapMessage) {
-  Serial.println(coapMessage.getCoapVersion());
-  Serial.println(coapMessage.getMessageType());
-  Serial.println(coapMessage.getTokenLength());
-  Serial.println(coapMessage.getCodeClass());
-  Serial.println(coapMessage.getCodeDetails());
+  debugVar(coapMessage.getCoapVersion());
+  debugVar(coapMessage.getCoapVersion());
+  debugVar(coapMessage.getMessageType());
+  debugVar(coapMessage.getTokenLength());
+  debugVar(coapMessage.getCodeClass());
+  debugVar(coapMessage.getCodeDetails());
 
-  Serial.print("token=");
+  //  Serial.print("token=");
   unsigned char* token = coapMessage.getToken();
   for (int i = 0; i < coapMessage.getTokenLength(); i++)
   {
@@ -179,6 +207,11 @@ void showDebug(CoapMessage &coapMessage) {
 
 }
 
-
-
-
+void hexPacket(unsigned char * packet, int packetLength) {
+  Serial.println("HEX PACKET");
+  for (int i = 0; i < packetLength; i++) {
+    Serial.print(packet[i], HEX);
+    Serial.print(", ");
+    if (!(i % 10)) Serial.println();
+  }
+}

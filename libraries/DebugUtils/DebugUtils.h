@@ -4,6 +4,6 @@
 
 #include <Arduino.h>
 
-#define debugVar(name) debugVariable(#name, (*name), __FUNCTION__);
+#define debugVar(name) debugVariable(#name, name, __FUNCTION__);
 
 void debugVariable(char *name, int value, char *funcName);

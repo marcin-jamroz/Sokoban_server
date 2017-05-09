@@ -9,10 +9,15 @@
 #include "CoapMessage.h"
 #include <BitOperations.h>
 #include "CoapUtils.h"
+#include <DebugUtils.h>
 
 
-bool CoapMessage::parse(unsigned char msg[], int length)
+bool CoapMessage::parse(unsigned char msg[], int length, IPAddress remoteIPAddress, int remotePort)
 {
+
+	this->remoteIPAddress = remoteIPAddress;
+	this->remotePort = remotePort;
+
 	unsigned int position = 0; // numer obs³ugiwanego bajtu wiadomoœci
 	// unsigned int length = sizeof(msg); // d³ugoœæ obs³ugiwanej wiadomoœci CoAPa; sizeof(unsigned char) = 1
 	unsigned char header[4] = { 0 }; // tablica nag³ówka wiadomoœci
@@ -44,11 +49,45 @@ bool CoapMessage::parse(unsigned char msg[], int length)
 	return false;
 }
 
-//unsigned char* CoapMessage::toPacket() {
-//	unsigned char* header = createHeader(token, msgType, codeClass, codeDetails, msgId[]);
-//}
+unsigned char * CoapMessage::toPacket(int &packetLength) {
+	unsigned char* header = createHeader();
 
-unsigned char* CoapMessage::createHeader(unsigned char token, unsigned char msgType, unsigned char codeClass, unsigned char codeDetails, unsigned char msgId[]) {
+	//Serial.println("HEX HEADER");
+	//for (int i = 0; i < 4; i++) {
+	//	Serial.print(header[i], HEX);
+	//	Serial.print(", ");
+	//	if (!(i % 10) && i!=0) Serial.println();
+	//}
+	
+	//   Content-Format tylko    tymczasowo !!!
+	uint8_t optionDelta = 12;
+	uint8_t optionLength = 1;
+
+	unsigned char option = (optionDelta << 4) | optionLength;
+	unsigned char optionValue = this->contentFormat;
+	int optionBytes = 1 + 1;
+	
+	packetLength = 4 + this->tokenLength + optionLength;
+
+	if (this->payloadLength > 0)
+		packetLength += 1 + this->payloadLength;
+
+	unsigned char * packet = new unsigned char[packetLength];
+	memcpy(packet, header, 4);
+	delete header;
+	memcpy(&packet[4], this->token, this->tokenLength);
+	memcpy(&packet[4 + tokenLength], &option, 1);
+	memcpy(&packet[4 + tokenLength + 1], &optionValue, 1);
+	if (this->payloadLength > 0)
+	{
+		packet[4 + tokenLength + 1 + 1] = 255; // payload marker
+		memcpy(&packet[4 + tokenLength + 1 + 1 + 1], this->payload, this->payloadLength);
+	}
+
+	return packet;
+}
+
+unsigned char* CoapMessage::createHeader() {
 	/*
 	Format nag³ówka wiadomoœci CoAP:
 	 0                   1                   2                   3
@@ -60,21 +99,67 @@ unsigned char* CoapMessage::createHeader(unsigned char token, unsigned char msgT
 
 	unsigned char* header = new unsigned char[4]; //ca³y  nag³ówek CoAPa ma 4 bajty (32 bity)
 	unsigned char * bytePointer = &header[0]; //wskaŸnik na pierwszy bajt
-
+	/*
 	// Funkcja setBits numeruje bity od prawej tzn 1110 to 0 jest bitem numer 0 
-	BitOperations::setBits(bytePointer, coapVersion, 6); // ustawia wersje protokolu na 6 bicie od prawej
-	BitOperations::setBits(bytePointer, msgType, 4);//ustawienie 2 bitów od czwartego jako msgType
-	BitOperations::setBits(bytePointer, tokenLength, 0);//ustawienie d³ugoœci tokena TKL
+	BitOperations::setBits(bytePointer, this->coapVersion, 6); // ustawia wersje protokolu na 6 bicie od prawej
+	BitOperations::setBits(bytePointer, this->msgType, 4);//ustawienie 2 bitów od czwartego jako msgType
+	BitOperations::setBits(bytePointer, this->tokenLength, 0);//ustawienie d³ugoœci tokena TKL
 
 	bytePointer = &header[1];//przejœcie na kolejny bajt
-	BitOperations::setBits(bytePointer, codeClass, 5);
-	BitOperations::setBits(bytePointer, codeDetails, 0);
+	BitOperations::setBits(bytePointer, this->codeClass, 5);
+	BitOperations::setBits(bytePointer, this->codeDetails, 0);
 
-	header[2] = msgId[0];
-	header[3] = msgId[1];
+	header[2] = this->messageID[0];
+	header[3] = this->messageID[1];
+	*/
+
+	// Nowa metoda bez BitOperations - DZIA£A - sprawdzone
+	header[0] = (coapVersion << 6) | (msgType << 4) | (tokenLength);
+	header[1] = (codeClass << 5) | codeDetails;
+	header[2] = messageID[0];
+	header[3] = messageID[1];
 
 	return header;
 }
+
+// ============== Metody aet...
+
+
+
+void CoapMessage::setHeader(unsigned char * token, uint8_t tokenLength, uint8_t msgType, uint8_t codeClass, uint8_t codeDetails, uint8_t msgId[])
+{
+	this->tokenLength = tokenLength;
+	this->token = new unsigned char[tokenLength];
+	memcpy(this->token, token, tokenLength);
+	this->msgType = msgType;
+	this->codeClass = codeClass;
+	this->codeDetails = codeDetails;
+
+	this->messageID[0] = msgId[0];
+	this->messageID[1] = msgId[1];
+
+	//debugVar(tokenLength);
+	//debugVar(token);
+	//debugVar(msgType);
+	//debugVar(codeClass);
+	//debugVar(codeDetails);
+	//debugVar(msgId[0]);
+
+}
+
+void CoapMessage::setContentFormat(uint8_t contentFormat)
+{
+	this->contentFormat = contentFormat;
+}
+
+void CoapMessage::setPayload(unsigned char * payload, uint8_t payloadLength)
+{
+	this->payloadLength = payloadLength;
+	this->payload = new unsigned char[payloadLength];
+	memcpy(this->payload, payload, payloadLength);
+}
+
+// ============== Metody get...
 
 
 uint8_t CoapMessage::getCoapVersion()
@@ -121,6 +206,13 @@ uint8_t CoapMessage::getPayloadLength(){
 	return payloadLength;
 }
 
+IPAddress CoapMessage::getRemoteIPAddress() {
+	return remoteIPAddress;
+}
+int CoapMessage::getRemotePort() {
+	return remotePort;
+}
+
 
 // =============================funckje prywatne  =============================
 bool CoapMessage::parseHeader(unsigned char * header)
@@ -165,18 +257,24 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 		
 	//	Serial.print("OptionDelta=");
 	//	Serial.println(optionDelta);
-		Serial.print("OptionNumber=");
-		Serial.println(optionNumber);
-		Serial.print("OptionLength=");
-		Serial.println(optionLength);
+	//	Serial.print("OptionNumber=");
+	//	Serial.println(optionNumber);
+	//	Serial.print("OptionLength=");
+	//	Serial.println(optionLength);
 	
 		switch (optionNumber)
 		{
 		case CoapUtils::OptionNumber::URI_PATH:
 			//memcpy(&uriPath, &message[position], optionLength);
-			for(int i =0; i<optionLength;i++){
-			uriPath = String(uriPath + (char)message[position+i]);
+			if (uriPath.length() > 0) 
+				uriPath = String(uriPath + '/');
+
+			for(int i = 0; i < optionLength; i++) {
+				char uriPathChar = (char)message[position + i];
+				uriPath = String(uriPath + uriPathChar);
+		//		Serial.println(uriPath);
 			}
+			Serial.println(uriPath);
 			break;
 		case CoapUtils::OptionNumber::ACCEPT:
 			memcpy(&accept, &message[position], optionLength);
@@ -187,7 +285,7 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 		}
 		position += optionLength;
 	}
-	Serial.println("Wyszedlem z while z parseOptions");
+	//Serial.println("Wyszedlem z while z parseOptions");
 }
 
 

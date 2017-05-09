@@ -32,6 +32,10 @@ public:
 		static const unsigned char CLIENT_ERROR = 4;
 		static const unsigned char SERVER_ERROR = 5;
 	};
+	class SuccessResponseCode {
+	public:
+		static const unsigned char CONTENT = 5;
+	};
 
 	class MessageType {
 	public:
