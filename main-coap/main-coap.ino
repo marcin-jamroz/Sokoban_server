@@ -182,6 +182,8 @@ void handlePutRequest(CoapMessage &coapMessage) {
     Serial.print((char)payload[i]);
   }
 
+  sendRequestViaRadio((short)(payload[0]-'0'));
+
 }
 
 void showDebug(CoapMessage &coapMessage) {
