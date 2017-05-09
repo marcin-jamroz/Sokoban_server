@@ -122,15 +122,37 @@ void loop() {
 //=========FUNCTIONS =================
 
 //=======RADIO=======
-void handleRadioRequest(short option, short value) {
+void handleRadioRequest(short option, short value, CoapMessage coapMessage) {     //dla zasobów o krótkim czasie dostępu, trochę na łatwiznę
 
   if (option == LampStatus) {
     Serial.println(value);
+    CoapMessage responseMessage;
+    uint8_t messageID[] = {201, 201};
+    responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
+    responseMessage.setContentFormat(0);
+    
+    unsigned char payload[] = "wartosc";
+    
+    responseMessage.setPayload(payload, sizeof(payload));
+
+    int packetLength = 0;
+    unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+
+    Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
+    Udp.write(packet, packetLength);
+    Udp.endPacket();
+
+    delete packet;
   }
 
   if (option == PotStatus) {
     Serial.println(value);
   }
+}
+
+void handleRadioRequest(short option, short value)    //przeciążenie do obsługi zasobów o dużym czasie dostępu
+{
+
 }
 
 void sendRequestViaRadio(short option) {
@@ -178,6 +200,26 @@ void handleGetRequest(CoapMessage &coapMessage) {
     Udp.endPacket();
 
     delete packet;
+  }
+
+  if (uriPath == "Lampka")
+  {
+    sendRequestViaRadio(2);
+    Serial.println("Odpowiedz ze statusem lampki");
+    boolean goOut = false;
+    while (goOut != true)
+    {
+      Serial.println("przyszla odpowiedz");
+      network.update();
+      while (network.available()) {
+        //   Serial.println("Odebrano");
+        struct Response message;
+        RF24NetworkHeader header;
+        network.read(header, &message, sizeof(struct Response));
+        handleRadioRequest(message.option, message.value, coapMessage);
+      }
+      goOut = true;
+    }
   }
 }
 
