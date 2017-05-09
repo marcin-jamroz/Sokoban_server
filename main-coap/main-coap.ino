@@ -124,7 +124,7 @@ void loop() {
 //=========FUNCTIONS =================
 
 //=======RADIO=======
-void handleRadioRequest(short option, short value, CoapMessage coapMessage) {     //dla zasobów o krótkim czasie dostępu, trochę na łatwiznę
+void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {     //dla zasobów o krótkim czasie dostępu, trochę na łatwiznę
 
   if (option == LampStatus) {
     Serial.println(value);
@@ -133,7 +133,8 @@ void handleRadioRequest(short option, short value, CoapMessage coapMessage) {   
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(0);
     
-    unsigned char payload[] = "wartosc";
+    unsigned char payload[2];
+    sprintf(payload, "%u", value);
     
     responseMessage.setPayload(payload, sizeof(payload));
 
@@ -184,17 +185,15 @@ void handleGetRequest(CoapMessage &coapMessage) {
     responseMessage.setContentFormat(40);
     
     // zasoby
-    CoapResource ledLamp("led", "led-lamp-status", "executable", 0, false);
-    CoapResource potentiometer("potentiometer", "potentiometer-status", "sensor", 0, true);
+    String ledLamp = "</led>'rt=\"led-lamp-status\";if=\"executable\";ct=0,");
+    String potentiometer = "</potentiometer>'rt=\"led-lamp-status\";if=\"executable\";ct=0;obs,");
 
-String ledLink, potentiometerLink;
-ledLamp.getCoreLinkFormat(ledLink);
-potentiometer.getCoreLinkFormat(potentiometerLink);
-    String resourcesLinks = String(ledLink + potentiometerLink);
+    String payload = ledLamp + potentiometer;
 
-    unsigned char payload[resourcesLinks.length()];
-    resourcesLinks.toCharArray((char*)payload, resourcesLinks.length());
+    Serial.println(payload);
 
+    unsigned char payloadCharArray[payload.length()+1];
+    payload.toCharArray((char*)payloadCharArray, payload.length());
     responseMessage.setPayload(payload, sizeof(payload));
 
     int packetLength = 0;
