@@ -14,7 +14,7 @@
 
 
 byte mac[] = {0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf8};
-byte ip [] = {192, 168, 0, 200};
+byte ip [] = {192, 168, 0, 25};
 EthernetUDP Udp;
 short localPort = 5683;
 
@@ -49,7 +49,7 @@ void setup() {
   SPI.begin();
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
-  Ethernet.begin(mac);
+  Ethernet.begin(mac,ip);
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
 
@@ -185,17 +185,36 @@ void handleGetRequest(CoapMessage &coapMessage) {
     responseMessage.setContentFormat(40);
     
     // zasoby
-    String ledLamp = "</led>'rt=\"led-lamp-status\";if=\"executable\";ct=0,");
-    String potentiometer = "</potentiometer>'rt=\"led-lamp-status\";if=\"executable\";ct=0;obs,");
+    String ledLamp = "</led>;rt=\"led-lamp-status\";if=\"executable\";ct=0,";
+    String potentiometer = "</potentiometer>;rt=\"led-lamp-status\";if=\"executable\";ct=0;obs,";
 
-    String payload = ledLamp + potentiometer;
+ //   ledLamp.concat(potentiometer);
 
-    Serial.println(payload);
+   // String payload;
+   
+    Serial.println(ledLamp);
+//Serial.flush();
+    unsigned char payloadCharArray[ledLamp.length()+1];
+    ledLamp.toCharArray((char*)payloadCharArray, ledLamp.length()+1);
 
-    unsigned char payloadCharArray[payload.length()+1];
-    payload.toCharArray((char*)payloadCharArray, payload.length());
-    responseMessage.setPayload(payload, sizeof(payload));
 
+Serial.println("Payload");
+
+for(int i=0; i<sizeof(payloadCharArray);i++)
+{
+  Serial.print((char)payloadCharArray[i]);
+}
+Serial.println();
+ // Serial.flush();
+    responseMessage.setPayload(payloadCharArray, sizeof(payloadCharArray));
+
+  //  Serial.flush();
+
+Serial.println("Payload response");
+for(int i=0; i<responseMessage.getPayloadLength();i++)
+{
+  Serial.print((char)responseMessage.getPayload()[i]);
+}
     int packetLength = 0;
     unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
 

@@ -116,7 +116,7 @@ unsigned char* CoapMessage::createHeader() {
 	// Nowa metoda bez BitOperations - DZIA£A - sprawdzone
 	header[0] = (coapVersion << 6) | (msgType << 4) | (tokenLength);
 	header[1] = (codeClass << 5) | codeDetails;
-	memcpy(&header[2], messageID, 2);
+	memcpy(&header[2], &messageID, 2);
 
 	return header;
 }
@@ -147,7 +147,10 @@ void CoapMessage::setContentFormat(uint8_t contentFormat)
 
 void CoapMessage::setPayload(unsigned char * payload, uint8_t payloadLength)
 {
+	Serial.print("Wchodzi do setPayload");
 	this->payloadLength = payloadLength;
+	Serial.print("Payload length=");
+	Serial.println(payloadLength);
 	this->payload = new unsigned char[payloadLength];
 	memcpy(this->payload, payload, payloadLength);
 }
