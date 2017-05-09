@@ -126,24 +126,18 @@ unsigned char* CoapMessage::createHeader() {
 
 
 
-void CoapMessage::setHeader(unsigned char * token, uint8_t tokenLength, uint8_t msgType, uint8_t codeClass, uint8_t codeDetails, uint8_t msgId[])
+void CoapMessage::setHeader(unsigned char * token, uint8_t tokenLength, uint8_t msgType, uint8_t codeClass, uint8_t codeDetails, uint16_t messageID)
 {
 	this->tokenLength = tokenLength;
 	this->token = new unsigned char[tokenLength];
 	memcpy(this->token, token, tokenLength);
+
+
 	this->msgType = msgType;
 	this->codeClass = codeClass;
 	this->codeDetails = codeDetails;
 
-	this->messageID[0] = msgId[0];
-	this->messageID[1] = msgId[1];
-
-	//debugVar(tokenLength);
-	//debugVar(token);
-	//debugVar(msgType);
-	//debugVar(codeClass);
-	//debugVar(codeDetails);
-	//debugVar(msgId[0]);
+	this->messageID = messageID;
 
 }
 
@@ -206,6 +200,11 @@ uint8_t CoapMessage::getPayloadLength(){
 	return payloadLength;
 }
 
+uint16_t CoapMessage::getMessageID()
+{
+	return messageID;
+}
+
 IPAddress CoapMessage::getRemoteIPAddress() {
 	return remoteIPAddress;
 }
@@ -229,8 +228,7 @@ bool CoapMessage::parseHeader(unsigned char * header)
 	codeClass = header[1] >> 5;
 	codeDetails = header[1] & 0b1111;
 
-	messageID[0] = header[2];
-	messageID[1] = header[3];
+	memcpy(&messageID, &header[2], 2);
 
 	return true;
 }
