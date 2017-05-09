@@ -13,8 +13,7 @@
     {}
 
     void CoapResource::getCoreLinkFormat(String &coreLinkFormat) {
-      coreLinkFormat = String("</" + name + ">;rt=\"" + resourceType + "\";if=\"" + interfaceDescription + "\";" +
-                              "ct=" + contentType);
+      coreLinkFormat = String("</" + name + ">;rt=\"" + resourceType + "\";if=\"" + interfaceDescription + "\";ct=" + contentType);
       if (isObservable) {
         coreLinkFormat = String(coreLinkFormat + ";obs");
       }
