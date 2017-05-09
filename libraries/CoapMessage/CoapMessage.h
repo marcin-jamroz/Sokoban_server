@@ -21,7 +21,7 @@ private:
 	uint8_t tokenLength;
 	uint8_t codeClass;  //0, 2, 4 ,5 
 	uint8_t codeDetails; // 3 bity, numer, patrz, klasa ni¿ej
-	uint8_t messageID[2];
+	uint16_t messageID;
 
 	unsigned char * token = nullptr;
 	
@@ -57,7 +57,7 @@ public:
 	// ================= Metody set... ================== //
 
 	// Ustawia naglowek wiadomosci
-	void setHeader(unsigned char * token, uint8_t tokenLength, uint8_t msgType, uint8_t codeClass, uint8_t codeDetails, uint8_t msgId[]);
+	void setHeader(unsigned char * token, uint8_t tokenLength, uint8_t msgType, uint8_t codeClass, uint8_t codeDetails, uint16_t messageID);
 
 	// ---- OPCJE
 	// Ustawia contentFormat
@@ -87,6 +87,9 @@ public:
 
 	// Zwraca dlugosc payloadu
 	uint8_t getPayloadLength();
+
+	// Zwraca messageID
+	uint16_t getMessageID();
 
 	// Zwraca UriPath
 	void getUriPath(String &dest);

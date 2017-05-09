@@ -116,8 +116,7 @@ unsigned char* CoapMessage::createHeader() {
 	// Nowa metoda bez BitOperations - DZIA£A - sprawdzone
 	header[0] = (coapVersion << 6) | (msgType << 4) | (tokenLength);
 	header[1] = (codeClass << 5) | codeDetails;
-	header[2] = messageID[0];
-	header[3] = messageID[1];
+	memcpy(&header[2], messageID, 2);
 
 	return header;
 }

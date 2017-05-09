@@ -7,6 +7,8 @@
 #include <CoapUtils.h>
 #include <DebugUtils.h>
 
+#include "CoapResource.h"
+
 #define MAX_BUFFER 60
 
 
@@ -177,7 +179,7 @@ void handleGetRequest(CoapMessage &coapMessage) {
   if (uriPath == ".well-known/core") {
     Serial.println("odkrywanie zasobow");
     CoapMessage responseMessage;
-    uint8_t messageID[] = {200, 200};
+    uint16_t messageID = 3124;
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(40);
     
@@ -191,7 +193,7 @@ potentiometer.getCoreLinkFormat(potentiometerLink);
     String resourcesLinks = String(ledLink + potentiometerLink);
 
     unsigned char payload[resourcesLinks.length()];
-    resourcesLinks.toCharArray((char[])payload, resourcesLinks.length());
+    resourcesLinks.toCharArray((char*)payload, resourcesLinks.length());
 
     responseMessage.setPayload(payload, sizeof(payload));
 
