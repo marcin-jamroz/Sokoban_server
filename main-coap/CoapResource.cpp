@@ -13,10 +13,10 @@
     {}
 
     void CoapResource::getCoreLinkFormat(String &coreLinkFormat) {
-      coreLinkFormat = String("</" + name + ">;rt=\"" + resourceType + "\";if=\"" + interfaceDescription + "\";ct=" + contentType);
+      coreLinkFormat = "</" + name + ">;rt=\"" + resourceType + "\";if=\"" + interfaceDescription + "\";ct=" + contentType;
       if (isObservable) {
-        coreLinkFormat = String(coreLinkFormat + ";obs");
+        coreLinkFormat = coreLinkFormat + ";obs";
       }
-      coreLinkFormat = String(coreLinkFormat + ",");
+      coreLinkFormat = coreLinkFormat + ",";
     }
 /// TODO: 3 metryki do badania jakosci polaczenia internetowego
