@@ -10,6 +10,8 @@ uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 01;
 
 short isLampOn = 0;
+short previousPotValue = 0;
+short currentPotValue = 0;
 
 
 enum option {LampOff, LampOn, LampStatus, PotStatus};
@@ -46,6 +48,16 @@ void loop() {
     Serial.println(message.option, DEC);
     handleRequest(message.option);
   }
+
+currentPotValue = analogRead(0);
+  if(currentPotValue != previousPotValue)
+  {
+  sendResponse(PotStatus, currentPotValue);
+  previousPotValue = currentPotValue;
+  }
+
+  
+  
 }
 
 void handleRequest(short option) {

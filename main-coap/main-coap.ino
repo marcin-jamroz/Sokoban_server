@@ -25,6 +25,9 @@ RF24Network network(radio);
 
 
 
+
+
+
 uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 00;
 
@@ -44,6 +47,15 @@ struct Response {
   short value;
 };
 
+ struct observer
+{
+  bool isEmpty;
+  IPAddress remoteAddress;
+  unsigned char * token;
+};
+
+  struct observer observersList[10];            // 10 observerów może być
+
 void setup() {
   Serial.begin(115200);
   SPI.begin();
@@ -52,7 +64,7 @@ void setup() {
   Ethernet.begin(mac, ip);
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
-
+  initializeObservers(observersList);
 }
 
 
@@ -61,6 +73,7 @@ void setup() {
 
 
 void loop() {
+
 
 
   //==============UDP COAP COMMUNICATION =================
@@ -150,6 +163,24 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {  
 
   if (option == PotStatus) {
     Serial.println(value);
+    CoapMessage responseMessage;
+    uint8_t messageID[] = {201, 201};
+    responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
+    responseMessage.setContentFormat(0);
+
+    unsigned char payload[2];
+    sprintf(payload, "%u", value);
+
+    responseMessage.setPayload(payload, sizeof(payload));
+
+    int packetLength = 0;
+    unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+
+    Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
+    Udp.write(packet, packetLength);
+    Udp.endPacket();
+
+    delete packet;
   }
 }
 
@@ -174,6 +205,8 @@ void handleGetRequest(CoapMessage &coapMessage) {
   String uriPath;
   coapMessage.getUriPath(uriPath);
   //  showDebug(coapMessage);
+  Serial.print("UriPath=");
+  Serial.println(uriPath);
 
 
   // debugVar(uriPath);
@@ -249,12 +282,22 @@ void handleGetRequest(CoapMessage &coapMessage) {
   if (uriPath == "Potencjometr")
   {
     uint8_t observeOption = coapMessage.getObserve();
+    Serial.print("ObserveOption=");
+    Serial.println(observeOption);
+    
     if (observeOption)
     {
       if (observeOption == 0)                                   // dodawanie do listy obserwatorow
       {
-        sendRequestViaRadio(2);
-        Serial.println("Odpowiedz ze statusem lampki");
+        Serial.println("W observe 0");
+        observersList[0].isEmpty = false;
+        observersList[0].remoteAddress = coapMessage.getRemoteIPAddress();
+        unsigned char * oToken;
+        memcpy(&oToken, coapMessage.getToken(),coapMessage.getTokenLength());
+        observersList[0].token = oToken;
+       
+        sendRequestViaRadio(PotStatus);
+        Serial.println("Odpowiedz ze statusem potencjometru");
         boolean goOut = false;
         while (goOut != true)
         {
@@ -277,7 +320,7 @@ void handleGetRequest(CoapMessage &coapMessage) {
     else
     {
       sendRequestViaRadio(PotStatus);
-        Serial.println("Odpowiedz z wartoscia potencjometru");
+        Serial.println("Odpowiedz z wartoscia ");
         boolean goOut = false;
         while (goOut != true)
         {
@@ -342,3 +385,15 @@ void hexPacket(unsigned char * packet, int packetLength) {
     if (!(i % 10)) Serial.println();
   }
 }
+
+void initializeObservers(struct observer observers[])
+{
+  for(int i=0; i<10;i++)
+  {
+  
+    observers[i].isEmpty = true;
+    observers[i].remoteAddress = IPAddress(0,0,0,0);
+    observers[i].token = nullptr;
+  }
+}
+

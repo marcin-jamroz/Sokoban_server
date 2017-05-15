@@ -291,7 +291,18 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 			break;
 			
 		case CoapUtils::OptionNumber::OBSERVE:
+		
+		if(optionLength == 0)
+		{
+			observe = 0;
+		}
+		else{
 			memcpy(&observe, &message[position], optionLength);
+			//Serial.print("Wartosc observe=");
+			//Serial.println(observe);
+			//Serial.print("Dlugosc opcji observe=");
+			//Serial.println(optionLength);
+		}
 			break;
 		}
 		position += optionLength;
