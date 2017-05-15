@@ -33,7 +33,7 @@ private:
 	//accept - format preferowamy dla odpowiedzi 
 	//content Format - format payloadu (text/plain, application/json itp)
 	String uriPath;
-	uint8_t accept, contentFormat;
+	uint8_t accept, contentFormat, observe;
 
 	IPAddress remoteIPAddress;
 	int remotePort;
@@ -93,6 +93,9 @@ public:
 
 	// Zwraca UriPath
 	void getUriPath(String &dest);
+	
+	// zwraca wartosc opcji observe
+	uint8_t getObserve();
 
 	// Zwraca payload	
 	unsigned char* getPayload();

@@ -49,7 +49,7 @@ void setup() {
   SPI.begin();
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
-  Ethernet.begin(mac,ip);
+  Ethernet.begin(mac, ip);
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
 
@@ -132,10 +132,10 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {  
     uint8_t messageID[] = {201, 201};
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(0);
-    
+
     unsigned char payload[2];
     sprintf(payload, "%u", value);
-    
+
     responseMessage.setPayload(payload, sizeof(payload));
 
     int packetLength = 0;
@@ -183,38 +183,38 @@ void handleGetRequest(CoapMessage &coapMessage) {
     uint16_t messageID = 3124;
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(40);
-    
+
     // zasoby
     String ledLamp = "</led>;rt=\"led-lamp-status\";if=\"executable\";ct=0,";
     String potentiometer = "</potentiometer>;rt=\"led-lamp-status\";if=\"executable\";ct=0;obs,";
 
- //   ledLamp.concat(potentiometer);
+    //   ledLamp.concat(potentiometer);
 
-   // String payload;
-   
+    // String payload;
+
     Serial.println(ledLamp);
-//Serial.flush();
-    unsigned char payloadCharArray[ledLamp.length()+1];
-    ledLamp.toCharArray((char*)payloadCharArray, ledLamp.length()+1);
+    //Serial.flush();
+    unsigned char payloadCharArray[ledLamp.length() + 1];
+    ledLamp.toCharArray((char*)payloadCharArray, ledLamp.length() + 1);
 
 
-Serial.println("Payload");
+    Serial.println("Payload");
 
-for(int i=0; i<sizeof(payloadCharArray);i++)
-{
-  Serial.print((char)payloadCharArray[i]);
-}
-Serial.println();
- // Serial.flush();
+    for (int i = 0; i < sizeof(payloadCharArray); i++)
+    {
+      Serial.print((char)payloadCharArray[i]);
+    }
+    Serial.println();
+    // Serial.flush();
     responseMessage.setPayload(payloadCharArray, sizeof(payloadCharArray));
 
-  //  Serial.flush();
+    //  Serial.flush();
 
-Serial.println("Payload response");
-for(int i=0; i<responseMessage.getPayloadLength();i++)
-{
-  Serial.print((char)responseMessage.getPayload()[i]);
-}
+    Serial.println("Payload response");
+    for (int i = 0; i < responseMessage.getPayloadLength(); i++)
+    {
+      Serial.print((char)responseMessage.getPayload()[i]);
+    }
     int packetLength = 0;
     unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
 
@@ -227,7 +227,7 @@ for(int i=0; i<responseMessage.getPayloadLength();i++)
 
   if (uriPath == "Lampka")
   {
-    sendRequestViaRadio(2);
+    sendRequestViaRadio(LampStatus);
     Serial.println("Odpowiedz ze statusem lampki");
     boolean goOut = false;
     while (goOut != true)
@@ -244,7 +244,59 @@ for(int i=0; i<responseMessage.getPayloadLength();i++)
       goOut = true;
     }
   }
+
+
+  if (uriPath == "Potencjometr")
+  {
+    uint8_t observeOption = coapMessage.getObserve();
+    if (observeOption)
+    {
+      if (observeOption == 0)                                   // dodawanie do listy obserwatorow
+      {
+        sendRequestViaRadio(2);
+        Serial.println("Odpowiedz ze statusem lampki");
+        boolean goOut = false;
+        while (goOut != true)
+        {
+          Serial.println("przyszla odpowiedz");
+          network.update();
+          while (network.available()) {
+            //   Serial.println("Odebrano");
+            struct Response message;
+            RF24NetworkHeader header;
+            network.read(header, &message, sizeof(struct Response));
+            handleRadioRequest(message.option, message.value, coapMessage);
+          }
+          goOut = true;
+        }
+      }
+      else if (observeOption == 1)                              //  usuwanie z listy obserwatorow
+      {
+      }
+    }
+    else
+    {
+      sendRequestViaRadio(PotStatus);
+        Serial.println("Odpowiedz z wartoscia potencjometru");
+        boolean goOut = false;
+        while (goOut != true)
+        {
+          Serial.println("przyszla odpowiedz");
+          network.update();
+          while (network.available()) {
+            //   Serial.println("Odebrano");
+            struct Response message;
+            RF24NetworkHeader header;
+            network.read(header, &message, sizeof(struct Response));
+            handleRadioRequest(message.option, message.value, coapMessage);
+          }
+          goOut = true;
+        }
+    }
+  }
 }
+
+
 
 void handlePutRequest(CoapMessage &coapMessage) {
   showDebug(coapMessage);

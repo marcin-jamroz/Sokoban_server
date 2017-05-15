@@ -188,6 +188,11 @@ void CoapMessage::getUriPath(String &dest)
 	dest = uriPath;
 }
 
+uint8_t CoapMessage::getObserve()
+{
+	return observe;
+}
+
 unsigned char* CoapMessage::getToken()
 {
 	return token;
@@ -276,11 +281,17 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 			}
 			Serial.println(uriPath);
 			break;
+			
 		case CoapUtils::OptionNumber::ACCEPT:
 			memcpy(&accept, &message[position], optionLength);
 			break;
+			
 		case CoapUtils::OptionNumber::CONTENT_FORMAT:
 			memcpy(&contentFormat, &message[position], optionLength);
+			break;
+			
+		case CoapUtils::OptionNumber::OBSERVE:
+			memcpy(&observe, &message[position], optionLength);
 			break;
 		}
 		position += optionLength;
