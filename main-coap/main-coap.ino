@@ -11,99 +11,83 @@
 
 #define MAX_BUFFER 60
 
-
-
 byte mac[] = {0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf8};
-byte ip [] = {192, 168, 0, 200};
-EthernetUDP Udp;
+byte ip [] = {192, 168, 0, 25};
 short localPort = 5683;
-
-char packetBuffer[MAX_BUFFER];
-
-RF24 radio(7, 8);
-RF24Network network(radio);
-
-
-
 uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 00;
-
-
-
+char packetBuffer[MAX_BUFFER];
 
 enum option {LampOff, LampOn, LampStatus, PotStatus};
-
 
 struct Request {
   short option;             //0 - lampka off, 1 - lampka ON, 2 - stan lampki, 3 - stan potencjometru
 };
-
 
 struct Response {
   short option;             //0 - lampka off, 1 - lampka ON, 2 - stan lampki, 3 - stan potencjometru
   short value;
 };
 
+struct observer
+{
+  bool isEmpty;
+  IPAddress remoteAddress;
+  unsigned char * token;
+};
+
+EthernetUDP Udp;
+RF24 radio(7, 8);
+RF24Network network(radio);
+
+struct observer observersList[10];            // 10 observerów może być
+
 void setup() {
   Serial.begin(115200);
   SPI.begin();
+  Ethernet.begin(mac, ip);
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
-  Ethernet.begin(mac);
-  Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
-
+  
+  Serial.println(Ethernet.localIP());
+  initializeObserversList(observersList);
 }
-
-
-
-
 
 
 void loop() {
 
 
   //==============UDP COAP COMMUNICATION =================
+
   //nasłuchuje na pakiety udp coapa
   int packetSize = Udp.parsePacket();
-  if (packetSize)
-  {
+
+  //gdy przyszedł pakiet
+  if (packetSize) {
     Serial.flush();
-    // Serial.println("Jestem w  , packetSize=");
+    Serial.println("Jestem w  , packetSize=");
     debugVar(&packetSize);
-    // Serial.println(packetSize);
-    Udp.read(packetBuffer, MAX_BUFFER);
-    //   sendRequestViaRadio(packetBuffer[0] - '0');
 
-    //1. parsowanie wiadomosci COAP. (sprawdzenie czy poprawna struktura wiadomosci, payload, nagłówek, opcje)
-    //2. reakcja zależna od wiadomosci - ogólnie komunikacja z lampką drogą radiową, pobranie danych, zmiana statusu lamplki itp
-    //3. wysłanie poprawnej odpowiedzi coap - uprzednie stworzenie, headery itp itp
-    //zapis tokena dla wiadomosci, bo musi  byc w odpowiedzi taki sam
-
-    unsigned char * packet = new unsigned char[packetSize];
-    memcpy(packet, packetBuffer, packetSize);
-    hexPacket(packet, packetSize);
     CoapMessage coapMessage;
-    coapMessage.parse(packet, packetSize, Udp.remoteIP(), Udp.remotePort());
-    delete packet;
-    //  Serial.println(packet[0]);
-    //  Serial.println(packet[1]);
-    //  Serial.println(packet[2]);
-    //  Serial.println(packet[3]);
+    unsigned char * packet = new unsigned char[packetSize];
 
-    //handleGetRequest(coapMessage);
+    Udp.read(packetBuffer, MAX_BUFFER); //wczytanie pakietu do bufora
+    memcpy(packet, packetBuffer, packetSize);  //skopiowanie do zmiennej packet
+    printPacketInHex(packet, packetSize);
+    
+    coapMessage.parse(packet, packetSize, Udp.remoteIP(), Udp.remotePort());// "wypełnienie obiektu CoapMessage" danymi pakietu
+    delete packet;
+    
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
-      handleGetRequest(coapMessage);
-      //    Serial.println("wyszedlem z handleReq");
+      handleGetRequest(coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
     }
 
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::PUT) {
-      handlePutRequest(coapMessage);
+      handlePutRequest(coapMessage);//IN MAIN-COAP-PUT-HANDLING.INO FILE :)
     }
 
   }
-
-
 
 
   //===========RADIO COMMUNICATION =======================
@@ -113,131 +97,32 @@ void loop() {
     //   Serial.println("Odebrano");
     struct Response message;
     RF24NetworkHeader header;
+    
     network.read(header, &message, sizeof(struct Response));
     //   Serial.println(message.option, DEC);
-    handleRadioRequest(message.option, message.value);
+
+    handleRadioRequest(message.option, message.value);  // W MAIN-COAP-RADIO-COMMUNICATION.INO FILE :)
   }
 }
 
 
+//========== UTILS =========================================
 
-//=========FUNCTIONS =================
 
-//=======RADIO=======
-void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {     //dla zasobów o krótkim czasie dostępu, trochę na łatwiznę
-
-  if (option == LampStatus) {
-    Serial.println(value);
-    CoapMessage responseMessage;
-    uint8_t messageID[] = {201, 201};
-    responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
-    responseMessage.setContentFormat(0);
-    
-    unsigned char payload[2];
-    sprintf(payload, "%u", value);
-    
-    responseMessage.setPayload(payload, sizeof(payload));
-
-    int packetLength = 0;
-    unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-
-    Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
-    Udp.write(packet, packetLength);
-    Udp.endPacket();
-
-    delete packet;
-  }
-
-  if (option == PotStatus) {
-    Serial.println(value);
+void initializeObserversList(struct observer observers[]) {
+  for (int i = 0; i < 10; i++) {
+    observers[i].isEmpty = true;
+    observers[i].remoteAddress = IPAddress(0, 0, 0, 0);
+    observers[i].token = nullptr;
   }
 }
 
-void handleRadioRequest(short option, short value)    //przeciążenie do obsługi zasobów o dużym czasie dostępu
-{
-
-}
-
-void sendRequestViaRadio(short option) {
-  RF24NetworkHeader header(01);
-  struct Request request;
-
-  request.option = option;
-
-  network.write(header, &request, sizeof(request));
-}
-
-
-//======COAP==========
-void handleGetRequest(CoapMessage &coapMessage) {
-
-  String uriPath;
-  coapMessage.getUriPath(uriPath);
-  //  showDebug(coapMessage);
-
-
-  // debugVar(uriPath);
-  if (uriPath == ".well-known/core") {
-    Serial.println("odkrywanie zasobow");
-    CoapMessage responseMessage;
-    uint16_t messageID = 3124;
-    responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
-    responseMessage.setContentFormat(40);
-    
-    // zasoby
-    String ledLamp = "</led>'rt=\"led-lamp-status\";if=\"executable\";ct=0,");
-    String potentiometer = "</potentiometer>'rt=\"led-lamp-status\";if=\"executable\";ct=0;obs,");
-
-    String payload = ledLamp + potentiometer;
-
-    Serial.println(payload);
-
-    unsigned char payloadCharArray[payload.length()+1];
-    payload.toCharArray((char*)payloadCharArray, payload.length());
-    responseMessage.setPayload(payload, sizeof(payload));
-
-    int packetLength = 0;
-    unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-
-    Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
-    Udp.write(packet, packetLength);
-    Udp.endPacket();
-
-    delete packet;
-  }
-
-  if (uriPath == "Lampka")
-  {
-    sendRequestViaRadio(2);
-    Serial.println("Odpowiedz ze statusem lampki");
-    boolean goOut = false;
-    while (goOut != true)
-    {
-      Serial.println("przyszla odpowiedz");
-      network.update();
-      while (network.available()) {
-        //   Serial.println("Odebrano");
-        struct Response message;
-        RF24NetworkHeader header;
-        network.read(header, &message, sizeof(struct Response));
-        handleRadioRequest(message.option, message.value, coapMessage);
-      }
-      goOut = true;
-    }
-  }
-}
-
-void handlePutRequest(CoapMessage &coapMessage) {
-  showDebug(coapMessage);
+void debugPayload(unsigned char* payload, uint8_t length ) {
   Serial.print("payload=");
-  unsigned char* payload = coapMessage.getPayload();
-  for (int i = 0; i < coapMessage.getPayloadLength(); i++)
-  {
+
+  for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
-
-  sendRequestViaRadio((short)(payload[0] - '0'));
-
 }
 
 void showDebug(CoapMessage &coapMessage) {
@@ -250,8 +135,7 @@ void showDebug(CoapMessage &coapMessage) {
 
   //  Serial.print("token=");
   unsigned char* token = coapMessage.getToken();
-  for (int i = 0; i < coapMessage.getTokenLength(); i++)
-  {
+  for (int i = 0; i < coapMessage.getTokenLength(); i++) {
     Serial.println(token[i], HEX);
   }
 
@@ -263,7 +147,7 @@ void showDebug(CoapMessage &coapMessage) {
 
 }
 
-void hexPacket(unsigned char * packet, int packetLength) {
+void printPacketInHex(unsigned char * packet, int packetLength) {
   Serial.println("HEX PACKET");
   for (int i = 0; i < packetLength; i++) {
     Serial.print(packet[i], HEX);
@@ -271,3 +155,4 @@ void hexPacket(unsigned char * packet, int packetLength) {
     if (!(i % 10)) Serial.println();
   }
 }
+

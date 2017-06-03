@@ -116,7 +116,7 @@ unsigned char* CoapMessage::createHeader() {
 	// Nowa metoda bez BitOperations - DZIA£A - sprawdzone
 	header[0] = (coapVersion << 6) | (msgType << 4) | (tokenLength);
 	header[1] = (codeClass << 5) | codeDetails;
-	memcpy(&header[2], messageID, 2);
+	memcpy(&header[2], &messageID, 2);
 
 	return header;
 }
@@ -147,7 +147,10 @@ void CoapMessage::setContentFormat(uint8_t contentFormat)
 
 void CoapMessage::setPayload(unsigned char * payload, uint8_t payloadLength)
 {
+	Serial.print("Wchodzi do setPayload");
 	this->payloadLength = payloadLength;
+	Serial.print("Payload length=");
+	Serial.println(payloadLength);
 	this->payload = new unsigned char[payloadLength];
 	memcpy(this->payload, payload, payloadLength);
 }
@@ -183,6 +186,11 @@ uint8_t CoapMessage::getTokenLength()
 void CoapMessage::getUriPath(String &dest)
 {
 	dest = uriPath;
+}
+
+uint8_t CoapMessage::getObserve()
+{
+	return observe;
 }
 
 unsigned char* CoapMessage::getToken()
@@ -273,11 +281,28 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 			}
 			Serial.println(uriPath);
 			break;
+			
 		case CoapUtils::OptionNumber::ACCEPT:
 			memcpy(&accept, &message[position], optionLength);
 			break;
+			
 		case CoapUtils::OptionNumber::CONTENT_FORMAT:
 			memcpy(&contentFormat, &message[position], optionLength);
+			break;
+			
+		case CoapUtils::OptionNumber::OBSERVE:
+		
+		if(optionLength == 0)
+		{
+			observe = 0;
+		}
+		else{
+			memcpy(&observe, &message[position], optionLength);
+			//Serial.print("Wartosc observe=");
+			//Serial.println(observe);
+			//Serial.print("Dlugosc opcji observe=");
+			//Serial.println(optionLength);
+		}
 			break;
 		}
 		position += optionLength;

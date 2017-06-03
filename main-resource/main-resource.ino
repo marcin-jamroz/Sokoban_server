@@ -10,6 +10,8 @@ uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 01;
 
 short isLampOn = 0;
+short previousPotValue = 0;
+short currentPotValue = 0;
 
 
 enum option {LampOff, LampOn, LampStatus, PotStatus};
@@ -31,6 +33,7 @@ void setup() {
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
   pinMode(3, OUTPUT);
+  analogWrite(3,255);
 }
 
 
@@ -43,9 +46,20 @@ void loop() {
     struct Request message;
     RF24NetworkHeader header;
     network.read(header, &message, sizeof(struct Request));
+    Serial.print("Opcja=");
     Serial.println(message.option, DEC);
     handleRequest(message.option);
   }
+
+//currentPotValue = analogRead(0);
+//  if(currentPotValue != previousPotValue)
+//  {
+//  sendResponse(PotStatus, currentPotValue);
+//  previousPotValue = currentPotValue;
+//  }
+
+  
+  
 }
 
 void handleRequest(short option) {
@@ -65,6 +79,7 @@ void handleRequest(short option) {
 
   if (option == PotStatus) {
     short potentiometerValue = analogRead(0);
+    
     Serial.println(potentiometerValue, DEC);
     sendResponse(PotStatus, potentiometerValue);
   }

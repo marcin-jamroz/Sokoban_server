@@ -14,6 +14,7 @@ public:
 		static const unsigned char URI_PATH = 11;
 		static const unsigned char ACCEPT = 17;
 		static const unsigned char CONTENT_FORMAT = 12;
+		static const unsigned char OBSERVE = 6;
 	};
 
 	class RequestMethod {
