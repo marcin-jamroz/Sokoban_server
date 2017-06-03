@@ -33,6 +33,7 @@ void setup() {
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
   pinMode(3, OUTPUT);
+  analogWrite(3,255);
 }
 
 
@@ -45,16 +46,17 @@ void loop() {
     struct Request message;
     RF24NetworkHeader header;
     network.read(header, &message, sizeof(struct Request));
+    Serial.print("Opcja=");
     Serial.println(message.option, DEC);
     handleRequest(message.option);
   }
 
-currentPotValue = analogRead(0);
-  if(currentPotValue != previousPotValue)
-  {
-  sendResponse(PotStatus, currentPotValue);
-  previousPotValue = currentPotValue;
-  }
+//currentPotValue = analogRead(0);
+//  if(currentPotValue != previousPotValue)
+//  {
+//  sendResponse(PotStatus, currentPotValue);
+//  previousPotValue = currentPotValue;
+//  }
 
   
   
@@ -77,6 +79,7 @@ void handleRequest(short option) {
 
   if (option == PotStatus) {
     short potentiometerValue = analogRead(0);
+    
     Serial.println(potentiometerValue, DEC);
     sendResponse(PotStatus, potentiometerValue);
   }

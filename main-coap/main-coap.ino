@@ -162,14 +162,22 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {  
   }
 
   if (option == PotStatus) {
+    Serial.print("Pot value=");
     Serial.println(value);
     CoapMessage responseMessage;
     uint8_t messageID[] = {201, 201};
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(0);
 
-    unsigned char payload[2];
-    sprintf(payload, "%u", value);
+    unsigned char* payload;
+    //sprintf(payload, "%u", value);
+    memcpy(&payload,&value,sizeof(value));
+
+ //  payload = (unsigned char* )&value;
+
+  Serial.println(payload[0]);
+  Serial.println(payload[1]);
+  Serial.println();
 
     responseMessage.setPayload(payload, sizeof(payload));
 
@@ -285,8 +293,7 @@ void handleGetRequest(CoapMessage &coapMessage) {
     Serial.print("ObserveOption=");
     Serial.println(observeOption);
     
-    if (observeOption)
-    {
+   
       if (observeOption == 0)                                   // dodawanie do listy obserwatorow
       {
         Serial.println("W observe 0");
@@ -316,7 +323,7 @@ void handleGetRequest(CoapMessage &coapMessage) {
       else if (observeOption == 1)                              //  usuwanie z listy obserwatorow
       {
       }
-    }
+    
     else
     {
       sendRequestViaRadio(PotStatus);
