@@ -13,6 +13,11 @@ short isLampOn = 0;
 short previousPotValue = 0;
 short currentPotValue = 0;
 
+unsigned long previousTime = 0;
+unsigned long currentTime = 0;
+
+#define GAP 5000
+
 
 enum option {LampOff, LampOn, LampStatus, PotStatus};
 
@@ -34,6 +39,7 @@ void setup() {
   network.begin(OUR_CHANNEL, THIS_NODE);
   pinMode(3, OUTPUT);
   analogWrite(3,255);
+  previousTime = millis();
 }
 
 
@@ -51,12 +57,15 @@ void loop() {
     handleRequest(message.option);
   }
 
-//currentPotValue = analogRead(0);
-//  if(currentPotValue != previousPotValue)
-//  {
-//  sendResponse(PotStatus, currentPotValue);
-//  previousPotValue = currentPotValue;
-//  }
+currentPotValue = analogRead(0);
+currentTime = millis();
+
+  if((abs(currentPotValue - previousPotValue) > 1) && (currentTime - previousTime >= GAP))
+  {
+  sendResponse(PotStatus, currentPotValue);
+  previousPotValue = currentPotValue;
+  previousTime = currentTime;
+  }
 
   
   
@@ -93,7 +102,8 @@ void sendResponse(short option, short value) {
   response.value = value;
 
   network.write(header, &response, sizeof(response));
-  Serial.println("wysłano");
+  Serial.print("Wysłano: ");
+  Serial.println(value, DEC);
 }
 
 
