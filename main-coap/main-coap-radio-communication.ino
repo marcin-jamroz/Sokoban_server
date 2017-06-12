@@ -21,7 +21,7 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {
   uint8_t messageID[] = {201, 201};
   unsigned char payload[2];
   int packetLength = 0;
-
+  
   //dla statusu potencjometru i lampki, to samo - > odesłanie value w payload
   sprintf(payload, "%u", value); //kopiowanie  value do payloadu
   setResponseMessageFields(responseMessage, coapMessage, messageID, payload); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
