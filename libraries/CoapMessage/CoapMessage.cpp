@@ -51,23 +51,24 @@ bool CoapMessage::parse(unsigned char msg[], int length, IPAddress remoteIPAddre
 
 unsigned char * CoapMessage::toPacket(int &packetLength) {
 	unsigned char* header = createHeader();
-
-	//Serial.println("HEX HEADER");
-	//for (int i = 0; i < 4; i++) {
-	//	Serial.print(header[i], HEX);
-	//	Serial.print(", ");
-	//	if (!(i % 10) && i!=0) Serial.println();
-	//}
-	
+	/*
+	//Serial.println("toPacket poczatek");
+	for (int i = 0; i < 4; i++) {
+		//Serial.print(header[i], HEX);
+		//Serial.print(", ");
+		if (!(i % 10) && i!=0) //Serial.println();
+	}
+	*/
 	//   Content-Format tylko    tymczasowo !!!
 	uint8_t optionDelta = 12;
 	uint8_t optionLength = 1;
+	uint8_t optionDescriptionLength = 1;
 
 	unsigned char option = (optionDelta << 4) | optionLength;
 	unsigned char optionValue = this->contentFormat;
 	int optionBytes = 1 + 1;
 	
-	packetLength = 4 + this->tokenLength + optionLength;
+	packetLength = 4 + this->tokenLength + optionDescriptionLength + optionLength;
 
 	if (this->payloadLength > 0)
 		packetLength += 1 + this->payloadLength;
@@ -76,14 +77,15 @@ unsigned char * CoapMessage::toPacket(int &packetLength) {
 	memcpy(packet, header, 4);
 	delete header;
 	memcpy(&packet[4], this->token, this->tokenLength);
-	memcpy(&packet[4 + tokenLength], &option, 1);
-	memcpy(&packet[4 + tokenLength + 1], &optionValue, 1);
+	memcpy(&packet[4 + tokenLength], &option, optionDescriptionLength);
+	memcpy(&packet[4 + tokenLength + 1], &optionValue, optionLength);
 	if (this->payloadLength > 0)
 	{
 		packet[4 + tokenLength + 1 + 1] = 255; // payload marker
 		memcpy(&packet[4 + tokenLength + 1 + 1 + 1], this->payload, this->payloadLength);
 	}
 
+	//Serial.println("toPacket koniec");
 	return packet;
 }
 
@@ -114,7 +116,7 @@ unsigned char* CoapMessage::createHeader() {
 	*/
 
 	// Nowa metoda bez BitOperations - DZIA£A - sprawdzone
-	header[0] = (coapVersion << 6) | (msgType << 4) | (tokenLength);
+	header[0] = (COAP_VERSION << 6) | (msgType << 4) | (tokenLength);
 	header[1] = (codeClass << 5) | codeDetails;
 	memcpy(&header[2], &messageID, 2);
 
@@ -147,10 +149,10 @@ void CoapMessage::setContentFormat(uint8_t contentFormat)
 
 void CoapMessage::setPayload(unsigned char * payload, uint8_t payloadLength)
 {
-	Serial.print("Wchodzi do setPayload");
+	////Serial.print("Wchodzi do setPayload");
 	this->payloadLength = payloadLength;
-	Serial.print("Payload length=");
-	Serial.println(payloadLength);
+	////Serial.print("Payload length=");
+	////Serial.println(payloadLength);
 	this->payload = new unsigned char[payloadLength];
 	memcpy(this->payload, payload, payloadLength);
 }
@@ -160,7 +162,7 @@ void CoapMessage::setPayload(unsigned char * payload, uint8_t payloadLength)
 
 uint8_t CoapMessage::getCoapVersion()
 {
-	return coapVersion;
+	return COAP_VERSION;
 }
 
 uint8_t CoapMessage::getMessageType()
@@ -215,8 +217,16 @@ uint16_t CoapMessage::getMessageID()
 IPAddress CoapMessage::getRemoteIPAddress() {
 	return remoteIPAddress;
 }
+
+void CoapMessage::setRemoteIPAddress(IPAddress ipAddress){
+	remoteIPAddress = ipAddress;
+}
 int CoapMessage::getRemotePort() {
 	return remotePort;
+}
+
+void CoapMessage::setRemotePort(int port){
+	remotePort = port;
 }
 
 
@@ -226,8 +236,8 @@ bool CoapMessage::parseHeader(unsigned char * header)
 	/* header_1stByte = header[0];
 	code = header[1]; */
 
-	coapVersion = header[0] >> 6;
-	if (coapVersion != 0b01)
+	int coapVersion = header[0] >> 6;
+	if (coapVersion != COAP_VERSION)
 		return false;
 	msgType = (header[0] & 0b00110000) >> 4;
 	tokenLength = header[0] & 0b1111;
@@ -249,8 +259,8 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 		
 	
 	unsigned int optionDelta = message[position] >> 4;// delta obecnej opcji
-	//	Serial.print("optionDelta=");
-	//	Serial.println(message[position],HEX);
+	//	//Serial.print("optionDelta=");
+	//	//Serial.println(message[position],HEX);
 
 	unsigned int optionLength = message[position++] & 0b00001111;	//d³ugoœæ wartoœci opcji 
 
@@ -260,12 +270,12 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 		
 		previousOptionNumber = optionNumber;
 		
-	//	Serial.print("OptionDelta=");
-	//	Serial.println(optionDelta);
-	//	Serial.print("OptionNumber=");
-	//	Serial.println(optionNumber);
-	//	Serial.print("OptionLength=");
-	//	Serial.println(optionLength);
+	//	//Serial.print("OptionDelta=");
+	//	//Serial.println(optionDelta);
+	//	//Serial.print("OptionNumber=");
+	//	//Serial.println(optionNumber);
+	//	//Serial.print("OptionLength=");
+	//	//Serial.println(optionLength);
 	
 		switch (optionNumber)
 		{
@@ -276,10 +286,11 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 
 			for(int i = 0; i < optionLength; i++) {
 				char uriPathChar = (char)message[position + i];
+				
 				uriPath = String(uriPath + uriPathChar);
-		//		Serial.println(uriPath);
+				//Serial.println(uriPath);
 			}
-			Serial.println(uriPath);
+			//Serial.println(uriPath);
 			break;
 			
 		case CoapUtils::OptionNumber::ACCEPT:
@@ -298,21 +309,21 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 		}
 		else{
 			memcpy(&observe, &message[position], optionLength);
-			//Serial.print("Wartosc observe=");
-			//Serial.println(observe);
-			//Serial.print("Dlugosc opcji observe=");
-			//Serial.println(optionLength);
+			////Serial.print("Wartosc observe=");
+			////Serial.println(observe);
+			////Serial.print("Dlugosc opcji observe=");
+			////Serial.println(optionLength);
 		}
 			break;
 		}
 		position += optionLength;
 	}
-	//Serial.println("Wyszedlem z while z parseOptions");
+	////Serial.println("Wyszedlem z while z parseOptions");
 }
 
 
 CoapMessage::~CoapMessage() {
-	Serial.println("Destruktor on");
+	////Serial.println("Destruktor CoapMessage");
 	if (token) delete token;
 	if (payload) delete payload;
 }

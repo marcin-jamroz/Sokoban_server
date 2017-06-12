@@ -22,12 +22,12 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {
 
   int digits = 1;
   int tmpValue = value;
-  while( tmpValue /= 10 )
+  while ( tmpValue /= 10 )
     digits++;
-  Serial.println(digits);
+  // Serial.println(digits);
   unsigned char payload[digits];
   int packetLength = 0;
-  
+
   //dla statusu potencjometru i lampki, to samo - > odesłanie value w payload
   sprintf(payload, "%u", value); //kopiowanie  value do payloadu
 
@@ -36,44 +36,87 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {
   //for(int i = 0; i<sizeof(value); i++) {
   //  payload[i] -= '0';
   //}
-  
+
   setResponseMessageFields(responseMessage, coapMessage, messageID, payload, digits); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
 
   unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-  Serial.print("handleRadioRequest packetLen: ");
-  Serial.println(packetLength);
+  // Serial.print("handleRadioRequest packetLen: ");
+  // Serial.println(packetLength);
   sendUdpResponse(coapMessage, packet, packetLength);
   delete packet;
 }
 
 void handleRadioRequest(short option, short value)    //przeciążenie do obsługi zasobów o dużym czasie dostępu
 {
+  for (int i = 0; i < 10; i++) {
+    if (observersList[i].isEmpty == false) {
+    
+      CoapMessage observeMessage;
 
+      uint8_t messageID[] = {201, 201};
+
+      int digits = 1;
+      int tmpValue = value;
+      while ( tmpValue /= 10 )
+        digits++;
+      // Serial.println(digits);
+      unsigned char payload[digits];
+      int packetLength = 0;
+
+      //dla statusu potencjometru i lampki, to samo - > odesłanie value w payload
+      sprintf(payload, "%u", value); //kopiowanie  value do payloadu
+
+      //memcpy(payload, &value, sizeof(value));
+
+      Serial.print("Token w handleRequest: ");
+      for(int n = 0; n < observersList[i].tokenLength; n++){
+        Serial.print(observersList[i].token[n], HEX);
+      }
+      Serial.println();
+      
+     observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
+     observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
+     observeMessage.setRemotePort(observersList[i].remotePort);
+     observeMessage.setContentFormat(0);
+     observeMessage.setPayload(payload, digits);
+
+     
+      //for(int i = 0; i<sizeof(value); i++) {
+      //  payload[i] -= '0';
+      //}
+
+      unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+      // Serial.print("handleRadioRequest packetLen: ");
+      // Serial.println(packetLength);
+      sendUdpResponse(observeMessage, packet, packetLength);
+      delete packet;
+    }
+  }
 }
 
 void sendUdpResponse(CoapMessage &coapMessage, unsigned char * packet, int packetLength) {
-  Serial.println("sendUdpResponse");
+  // Serial.println("sendUdpResponse");
   Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
   Udp.write(packet, packetLength);
   Udp.endPacket();
 }
 
 void setResponseMessageFields(CoapMessage &responseMessage,  CoapMessage &coapMessage, uint8_t messageID[], unsigned char * payload, int payloadLength) {
-  if(payload == NULL)
+  if (payload == NULL)
   {
     Serial.println("payload null");
     return;
   }
   else
   {
-    Serial.println("payload nie null");
+    // Serial.println("payload nie null");
 
     responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
     responseMessage.setContentFormat(0);
     responseMessage.setPayload(payload, payloadLength);
-    showDebug(coapMessage);
+    //   showDebug(coapMessage);
 
-    showDebug(responseMessage);
+    //   showDebug(responseMessage);
   }
 }
 
