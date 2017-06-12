@@ -65,21 +65,22 @@ void loop() {
 
   //gdy przyszedł pakiet
   if (packetSize) {
-    Serial.flush();
-    Serial.println("Jestem w  , packetSize=");
-    debugVar(&packetSize);
+    //Serial.flush();
+   // Serial.println("Jestem w  , packetSize=");
+   // debugVar(&packetSize);
 
     CoapMessage coapMessage;
     unsigned char * packet = new unsigned char[packetSize];
 
     Udp.read(packetBuffer, MAX_BUFFER); //wczytanie pakietu do bufora
     memcpy(packet, packetBuffer, packetSize);  //skopiowanie do zmiennej packet
-    printPacketInHex(packet, packetSize);
+   // printPacketInHex(packet, packetSize);
     
     coapMessage.parse(packet, packetSize, Udp.remoteIP(), Udp.remotePort());// "wypełnienie obiektu CoapMessage" danymi pakietu
     delete packet;
     
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
+     // Serial.println("GET");
       handleGetRequest(coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
     }
 
@@ -126,7 +127,6 @@ void debugPayload(unsigned char* payload, uint8_t length ) {
 }
 
 void showDebug(CoapMessage &coapMessage) {
-  debugVar(coapMessage.getCoapVersion());
   debugVar(coapMessage.getCoapVersion());
   debugVar(coapMessage.getMessageType());
   debugVar(coapMessage.getTokenLength());

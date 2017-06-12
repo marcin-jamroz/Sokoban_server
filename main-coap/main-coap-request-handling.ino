@@ -20,18 +20,17 @@ void handleGetRequest(CoapMessage &coapMessage) {
     waitForResponseAndHandleIt(coapMessage);
   }
 
-  if (uriPath == "Potencjometr") {
+  if (uriPath == "Pot") {
     uint8_t observeOption = coapMessage.getObserve();
     Serial.print("ObserveOption=");
     Serial.println(observeOption);
 
-    if (observeOption) {
-      if (observeOption == 0) {                               // dodawanie do listy obserwatorow
-        addObserverForPotStatus(coapMessage);
-      }
-      if (observeOption == 1) {                           //  usuwanie z listy obserwatorow
-        removeObserverForPotStatus(coapMessage);
-      }
+
+    if (observeOption == 0) {                               // dodawanie do listy obserwatorow
+      addObserverForPotStatus(coapMessage);
+    }
+    else if (observeOption == 1) {                           //  usuwanie z listy obserwatorow
+      removeObserverForPotStatus(coapMessage);
     }
     else {
       sendRequestViaRadio(PotStatus);
@@ -90,8 +89,9 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
       RF24NetworkHeader header;
       network.read(header, &message, sizeof(struct Response));
       handleRadioRequest(message.option, message.value, coapMessage);
+      waitForResponse = false;
     }
-    waitForResponse = false;
+
   }
 }
 
