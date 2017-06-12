@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <Ethernet.h>
+
+#define COAP_VERSION 1
+
 // Klasa reprezentuj¹ca wiadomoœæ protoko³u CoAP
 class CoapMessage {
 private:
@@ -16,7 +19,8 @@ private:
 	
 	char header_1stByte; 
 	*/
-	uint8_t coapVersion = 01;
+
+	
 	uint8_t msgType;
 	uint8_t tokenLength;
 	uint8_t codeClass;  //0, 2, 4 ,5 
@@ -105,9 +109,16 @@ public:
 
 	// Zwraca adres IP z którego przysz³a wiadomoœæ CoAPa 
 	IPAddress getRemoteIPAddress();
-
+	
+	// Ustawia podany IP, na który zostanie wys³ana wiadomoœæ
+	void setRemoteIPAddress(IPAddress ipAddress);
+	
 	// Zwraca port z którego przysz³a wiadomoœæ CoAPa
 	int getRemotePort();
+	
+	// Ustawia remote port
+	void setRemotePort(int port);
+
 
 	// destruktor obiektu
 	~CoapMessage();

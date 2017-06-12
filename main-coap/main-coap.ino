@@ -34,6 +34,8 @@ struct observer
   bool isEmpty;
   IPAddress remoteAddress;
   unsigned char * token;
+  int tokenLength;
+  int remotePort;
 };
 
 EthernetUDP Udp;
@@ -100,9 +102,9 @@ void loop() {
     RF24NetworkHeader header;
     
     network.read(header, &message, sizeof(struct Response));
-    //   Serial.println(message.option, DEC);
+      // Serial.println(message.value, DEC);
 
-    handleRadioRequest(message.option, message.value);  // W MAIN-COAP-RADIO-COMMUNICATION.INO FILE :)
+     handleRadioRequest(message.option, message.value);  // W MAIN-COAP-RADIO-COMMUNICATION.INO FILE :)
   }
 }
 
@@ -115,6 +117,8 @@ void initializeObserversList(struct observer observers[]) {
     observers[i].isEmpty = true;
     observers[i].remoteAddress = IPAddress(0, 0, 0, 0);
     observers[i].token = nullptr;
+    observers[i].tokenLength = 0;
+    observers[i].remotePort = 0;
   }
 }
 

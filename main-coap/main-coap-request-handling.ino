@@ -81,10 +81,10 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
   boolean waitForResponse = true;
 
   while (waitForResponse) {
-    Serial.println("przyszla odpowiedz z resourca");
+    //Serial.println("przyszla odpowiedz z resourca");
     network.update();
     while (network.available()) {
-      Serial.println("Odebrano");
+      //Serial.println("Odebrano");
       struct Response message;
       RF24NetworkHeader header;
       network.read(header, &message, sizeof(struct Response));
@@ -101,10 +101,20 @@ void addObserverForPotStatus(CoapMessage &coapMessage) {
   Serial.println("W observe 0");
   observersList[0].isEmpty = false;
   observersList[0].remoteAddress = coapMessage.getRemoteIPAddress();
-  unsigned char * oToken;
+  unsigned char * oToken = new unsigned char[coapMessage.getTokenLength()];
 
-  memcpy(&oToken, coapMessage.getToken(), coapMessage.getTokenLength());
+  memcpy(oToken, coapMessage.getToken(), coapMessage.getTokenLength());
   observersList[0].token = oToken;
+
+  Serial.println();
+  Serial.print("Token observer: ");
+  for(int i = 0; i < coapMessage.getTokenLength(); i++){
+    Serial.print(oToken[i], HEX);
+  }
+
+  Serial.println();
+  
+  observersList[0].tokenLength = coapMessage.getTokenLength();
 
   sendRequestViaRadio(PotStatus);
   Serial.println("Odpowiedz ze statusem potencjometru");
