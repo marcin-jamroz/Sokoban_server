@@ -90,8 +90,8 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
       RF24NetworkHeader header;
       network.read(header, &message, sizeof(struct Response));
       handleRadioRequest(message.option, message.value, coapMessage);
+      waitForResponse = false;
     }
-    waitForResponse = false;
   }
 }
 
