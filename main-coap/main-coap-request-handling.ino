@@ -92,6 +92,8 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
       waitForResponse = false;
     }
 
+
+
   }
 }
 
