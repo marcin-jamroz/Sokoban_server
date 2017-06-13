@@ -51,15 +51,18 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
   for (int i = 0; i < 10; i++) {
     if (observersList[i].isEmpty == false) {
 
+      observersList[i].sequenceNumber++;
+
       CoapMessage observeMessage;
 
       uint8_t messageID[] = {201, 201};
 
       int digits = 1;
       int tmpValue = value;
+      
       while ( tmpValue /= 10 )
         digits++;
-      // Serial.println(digits);
+        
       unsigned char payload[digits];
       int packetLength = 0;
 
@@ -73,6 +76,7 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
         Serial.print(observersList[i].token[n], HEX);
       }
       Serial.println();
+<<<<<<< HEAD
 
       observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
       observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
@@ -102,6 +106,18 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
                                      // Serial.println(packetLength);
                                      sendUdpResponse(observeMessage, packet, packetLength);
                                      delete packet;
+=======
+      
+     observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
+     observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
+     observeMessage.setRemotePort(observersList[i].remotePort);
+     observeMessage.setContentFormat(0);
+     observeMessage.setPayload(payload, digits);
+
+      unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+      sendUdpResponse(observeMessage, packet, packetLength);
+      delete packet;
+>>>>>>> 94fc3785298e82560f8e4e93ea19df1abb88b27f
     }
   }
 }

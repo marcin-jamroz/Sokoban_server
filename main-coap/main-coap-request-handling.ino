@@ -98,32 +98,59 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
 }
 
 void addObserverForPotStatus(CoapMessage &coapMessage) {
-  Serial.println("W observe 0");
-  observersList[0].isEmpty = false;
-  observersList[0].remoteAddress = coapMessage.getRemoteIPAddress();
-  unsigned char * oToken = new unsigned char[coapMessage.getTokenLength()];
 
-  memcpy(oToken, coapMessage.getToken(), coapMessage.getTokenLength());
-  observersList[0].token = oToken;
+  for (int i = 0; i < 10; i++) {
 
-  Serial.println();
-  Serial.print("Token observer: ");
-  for(int i = 0; i < coapMessage.getTokenLength(); i++){
-    Serial.print(oToken[i], HEX);
+    if (observersList[i].isEmpty == true) {
+      Serial.println("W observe 0");
+      observersList[i].isEmpty = false;
+      observersList[i].remoteAddress = coapMessage.getRemoteIPAddress();
+      unsigned char * oToken = new unsigned char[coapMessage.getTokenLength()];
+
+      memcpy(oToken, coapMessage.getToken(), coapMessage.getTokenLength());
+      observersList[i].token = oToken;
+
+      Serial.println();
+      Serial.print("Token observer: ");
+      for (int i = 0; i < coapMessage.getTokenLength(); i++) {
+        Serial.print(oToken[i], HEX);
+      }
+
+      Serial.println();
+
+      observersList[i].tokenLength = coapMessage.getTokenLength();
+
+      sendRequestViaRadio(PotStatus);
+      Serial.println("Odpowiedz ze statusem potencjometru");
+      waitForResponseAndHandleIt(coapMessage);
+
+      break;
+    }
   }
-
-  Serial.println();
-  
-  observersList[0].tokenLength = coapMessage.getTokenLength();
-
-  sendRequestViaRadio(PotStatus);
-  Serial.println("Odpowiedz ze statusem potencjometru");
-  waitForResponseAndHandleIt(coapMessage);
-
 }
 
 void removeObserverForPotStatus(CoapMessage &coapMessage) {
-  //todo
+  for (int i = 0; i < 10; i++) {
+    if (coapMessage.getTokenLength() == observersList[i].tokenLength) {
+      boolean isEqual = true;
+      for (int n = 0; n < coapMessage.getTokenLength(); n++) {
+        if (coapMessage.getToken()[n] != observersList[i].token[n]) {
+          isEqual = false;
+        }
+      }
+
+      if (isEqual == true) {
+        observersList[i].isEmpty = true;
+        observersList[i].remoteAddress = IPAddress(0, 0, 0, 0);
+        delete observersList[i].token;
+        observersList[i].token = nullptr;
+        observersList[i].tokenLength = 0;
+        observersList[i].remotePort = 0;
+        observersList[i].sequenceNumber = 2;
+        break;
+      }
+    }
+  }
 }
 
 
