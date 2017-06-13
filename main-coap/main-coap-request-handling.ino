@@ -62,7 +62,7 @@ void respondToWellKnownCoreGet(CoapMessage &coapMessage) {
   // Serial.println("odkrywanie zasobow");
 
   // na razie 16 bajtow max ma payload
-  String wellKnown = "</Lampka>,</Pot>;obs;rt=\"observe\",</ackToCon>";
+  String wellKnown = "</Lampka>,</Pot>;obs;rt=\"observe\",</ackToCon>,</observersNumber>";
   //  Serial.print("dlugosc wellKnown: ");
   //  Serial.println(wellKnown.length());
    // Serial.print("ilosc partow wellKnown: ");
