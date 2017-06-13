@@ -83,7 +83,7 @@ void loop() {
     delete packet;
     
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
-      Serial.println("GET");
+      //Serial.println("GET");
       handleGetRequest(coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
     }
 
@@ -98,7 +98,7 @@ void loop() {
   // Nasłuchuje na wiadomości radiowe od CoAP-resource (poziom potencjometru, status lampki)
   network.update();
   while (network.available()) {
-    //   Serial.println("Odebrano");
+     //  Serial.println("Odebrano");
     struct Response message;
     RF24NetworkHeader header;
     
@@ -124,41 +124,41 @@ void initializeObserversList(struct observer observers[]) {
   }
 }
 
-void debugPayload(unsigned char* payload, uint8_t length ) {
-  Serial.print("payload=");
-
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-}
-
-void showDebug(CoapMessage &coapMessage) {
-  debugVar(coapMessage.getCoapVersion());
-  debugVar(coapMessage.getMessageType());
-  debugVar(coapMessage.getTokenLength());
-  debugVar(coapMessage.getCodeClass());
-  debugVar(coapMessage.getCodeDetails());
-
-  //  Serial.print("token=");
-  unsigned char* token = coapMessage.getToken();
-  for (int i = 0; i < coapMessage.getTokenLength(); i++) {
-    Serial.println(token[i], HEX);
-  }
-
-  String uriPath;
-  coapMessage.getUriPath(uriPath);
-  Serial.print("UriPath = ");
-  Serial.println(uriPath);
-  Serial.println("Koniec showDebug");
-
-}
-
-void printPacketInHex(unsigned char * packet, int packetLength) {
-  Serial.println("HEX PACKET");
-  for (int i = 0; i < packetLength; i++) {
-    Serial.print(packet[i], HEX);
-    Serial.print(", ");
-    if (!(i % 10)) Serial.println();
-  }
-}
+//void debugPayload(unsigned char* payload, uint8_t length ) {
+//  Serial.print("payload=");
+//
+//  for (int i = 0; i < length; i++) {
+//    Serial.print((char)payload[i]);
+//  }
+//}
+//
+//void showDebug(CoapMessage &coapMessage) {
+//  debugVar(coapMessage.getCoapVersion());
+//  debugVar(coapMessage.getMessageType());
+//  debugVar(coapMessage.getTokenLength());
+//  debugVar(coapMessage.getCodeClass());
+//  debugVar(coapMessage.getCodeDetails());
+//
+//  //  Serial.print("token=");
+//  unsigned char* token = coapMessage.getToken();
+//  for (int i = 0; i < coapMessage.getTokenLength(); i++) {
+//    Serial.println(token[i], HEX);
+//  }
+//
+//  String uriPath;
+//  coapMessage.getUriPath(uriPath);
+//  Serial.print("UriPath = ");
+//  Serial.println(uriPath);
+//  Serial.println("Koniec showDebug");
+//
+//}
+//
+//void printPacketInHex(unsigned char * packet, int packetLength) {
+//  Serial.println("HEX PACKET");
+//  for (int i = 0; i < packetLength; i++) {
+//    Serial.print(packet[i], HEX);
+//    Serial.print(", ");
+//    if (!(i % 10)) Serial.println();
+//  }
+//}
 

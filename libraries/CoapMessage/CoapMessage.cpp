@@ -108,18 +108,25 @@ unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
 		
 		previousOptionNumber = 6;
 	}
+	
+	Serial.print("ObserveOptionLength: ");
+	Serial.println(observeOptionLength);
+	
 	optionDelta = 12 - previousOptionNumber;
 	uint8_t optionContentFormatLength = 0;
 	optionsBytesLength++; // option Content-Format Description
 	unsigned char optionContentFormat = (optionDelta << 4) | optionContentFormatLength;
+	
+	Serial.print("optionContenetFormat: ");
+	Serial.println(optionContentFormat, HEX);
 	
 	unsigned char * options = new unsigned char[optionsBytesLength];
 	
 	int optByte = 0;
 	if(isObserveEnabled) {
 		options[optByte++] = (6 << 4) | observeOptionLength;
-		for(int i = 2 - observeOptionLength+1; i<observeOptionLength; i++) {
-			options[optByte++] = observeOptionValue[i];
+		for(int i = observeOptionLength-1; i>=0; i--) {
+			options[optByte++] = observeOptionValue[2-i];
 		}
 	}
 	Serial.print("optionsBytesLength: ");
@@ -257,9 +264,12 @@ void CoapMessage::setRemotePort(int port){
 }
 
 
-void CoapMessage::setObserveValue(bool enableFlag, uint8_t observeValue[]){
+void CoapMessage::setObserveValue(bool enableFlag, uint8_t* observeValue){
 	isObserveEnabled = enableFlag;
-	observeOptionValue = observeValue;
+	observeOptionValue[0] = observeValue[0];
+		observeOptionValue[1] = observeValue[1];
+	observeOptionValue[2] = observeValue[2];
+
 
 }
 

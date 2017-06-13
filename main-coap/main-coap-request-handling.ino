@@ -42,8 +42,8 @@ void handleGetRequest(CoapMessage &coapMessage) {
 void handlePutRequest(CoapMessage &coapMessage) {
   unsigned char* payload = coapMessage.getPayload();
 
-  showDebug(coapMessage); //in main-coap file :)
-  debugPayload(payload, coapMessage.getPayloadLength());
+//  showDebug(coapMessage); //in main-coap file :)
+//  debugPayload(payload, coapMessage.getPayloadLength());
 
   sendRequestViaRadio((short)(payload[0] - '0'));  // W MAIN-COAP-RADIO-COMMUNICATION.INO FILE :)
 
@@ -65,8 +65,8 @@ void respondToWellKnownCoreGet(CoapMessage &coapMessage) {
 
   ledLamp.toCharArray((char*)payloadCharArray, ledLamp.length() + 1);
 
-  debugPayload(payloadCharArray, sizeof(payloadCharArray));  //from main-coap.ino
-  debugPayload(responseMessage.getPayload(), responseMessage.getPayloadLength());
+//  debugPayload(payloadCharArray, sizeof(payloadCharArray));  //from main-coap.ino
+ // debugPayload(responseMessage.getPayload(), responseMessage.getPayloadLength());
 
   responseMessage.setPayload(payloadCharArray, sizeof(payloadCharArray));
 
@@ -105,6 +105,7 @@ void addObserverForPotStatus(CoapMessage &coapMessage) {
       Serial.println("W observe 0");
       observersList[i].isEmpty = false;
       observersList[i].remoteAddress = coapMessage.getRemoteIPAddress();
+      observersList[i].remotePort = coapMessage.getRemotePort();
       unsigned char * oToken = new unsigned char[coapMessage.getTokenLength()];
 
       memcpy(oToken, coapMessage.getToken(), coapMessage.getTokenLength());
@@ -122,7 +123,7 @@ void addObserverForPotStatus(CoapMessage &coapMessage) {
 
       sendRequestViaRadio(PotStatus);
       Serial.println("Odpowiedz ze statusem potencjometru");
-      waitForResponseAndHandleIt(coapMessage);
+   //   waitForResponseAndHandleIt(coapMessage);
 
       break;
     }
@@ -140,6 +141,7 @@ void removeObserverForPotStatus(CoapMessage &coapMessage) {
       }
 
       if (isEqual == true) {
+        Serial.println("Usunieto obserwatora");
         observersList[i].isEmpty = true;
         observersList[i].remoteAddress = IPAddress(0, 0, 0, 0);
         delete observersList[i].token;
@@ -147,6 +149,9 @@ void removeObserverForPotStatus(CoapMessage &coapMessage) {
         observersList[i].tokenLength = 0;
         observersList[i].remotePort = 0;
         observersList[i].sequenceNumber = 2;
+
+        uint8_t zeroObserve[3] = {5, 5, 5};
+        coapMessage.setObserveValue(false, zeroObserve);
         break;
       }
     }

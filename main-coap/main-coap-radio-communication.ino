@@ -59,10 +59,10 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
 
       int digits = 1;
       int tmpValue = value;
-      
+
       while ( tmpValue /= 10 )
         digits++;
-        
+
       unsigned char payload[digits];
       int packetLength = 0;
 
@@ -71,12 +71,12 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
 
       //memcpy(payload, &value, sizeof(value));
 
-      Serial.print("Token w handleRequest: ");
-      for (int n = 0; n < observersList[i].tokenLength; n++) {
-        Serial.print(observersList[i].token[n], HEX);
-      }
-      Serial.println();
-<<<<<<< HEAD
+//      Serial.print("Token w handleRequest: ");
+//      for (int n = 0; n < observersList[i].tokenLength; n++) {
+//        Serial.print(observersList[i].token[n], HEX);
+//      }
+//      Serial.println();
+
 
       observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
       observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
@@ -85,45 +85,35 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
       observeMessage.setPayload(payload, digits);
 
       uint8_t observeValue[3];
-      for (int j = 0; j < 8; j++)
-        bitWrite(observeValue[3], j, bitRead(observersList[i].sequenceNumber, j));
+      observeValue[2] = (uint8_t)(observersList[i].sequenceNumber >> 0);
+      observeValue[1] = (uint8_t)(observersList[i].sequenceNumber >> 8);
+      observeValue[0] = (uint8_t)(observersList[i].sequenceNumber >> 16);
 
-      for (int j = 8; j < 16; j++)
-        bitWrite(observeValue[3], j, bitRead(observersList[i].sequenceNumber, j));
 
-      for (int j = 16; j < 24; j++)
-        bitWrite(observeValue[3], j, bitRead(observersList[i].sequenceNumber, j));
+      Serial.print("Sequence number value: ");
+      Serial.println(observeValue[2]);
+      Serial.println(observeValue[1]);
+      Serial.println(observeValue[0]);
 
       observeMessage.setObserveValue(true, observeValue);
 
 
-                                     //for(int i = 0; i<sizeof(value); i++) {
-                                     //  payload[i] -= '0';
-                                     //}
-
-                                     unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-                                     // Serial.print("handleRadioRequest packetLen: ");
-                                     // Serial.println(packetLength);
-                                     sendUdpResponse(observeMessage, packet, packetLength);
-                                     delete packet;
-=======
-      
-     observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
-     observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
-     observeMessage.setRemotePort(observersList[i].remotePort);
-     observeMessage.setContentFormat(0);
-     observeMessage.setPayload(payload, digits);
+      //for(int i = 0; i<sizeof(value); i++) {
+      //  payload[i] -= '0';
+      //}
 
       unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+      // Serial.print("handleRadioRequest packetLen: ");
+      // Serial.println(packetLength);
       sendUdpResponse(observeMessage, packet, packetLength);
       delete packet;
->>>>>>> 94fc3785298e82560f8e4e93ea19df1abb88b27f
+
     }
   }
 }
 
 void sendUdpResponse(CoapMessage &coapMessage, unsigned char * packet, int packetLength) {
-  // Serial.println("sendUdpResponse");
+  Serial.println("sendUdpResponse");
   Udp.beginPacket(coapMessage.getRemoteIPAddress(), coapMessage.getRemotePort());
   Udp.write(packet, packetLength);
   Udp.endPacket();
@@ -132,7 +122,7 @@ void sendUdpResponse(CoapMessage &coapMessage, unsigned char * packet, int packe
 void setResponseMessageFields(CoapMessage &responseMessage,  CoapMessage &coapMessage, uint8_t messageID[], unsigned char * payload, int payloadLength) {
   if (payload == NULL)
   {
-    Serial.println("payload null");
+   // Serial.println("payload null");
     return;
   }
   else

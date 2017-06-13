@@ -75,7 +75,7 @@ public:
 	void setPayload(unsigned char * payload, uint8_t payloadLength);
 
 	
-	void setObserveValue(bool enableFlag, uint8_t observeValue[]);
+	void setObserveValue(bool enableFlag, uint8_t* observeValue);
 	
 
 	// ================= Metody get... ================== //
