@@ -36,6 +36,7 @@ struct observer
   unsigned char * token;
   int tokenLength;
   int remotePort;
+  int sequenceNumber;
 };
 
 EthernetUDP Udp;
@@ -119,6 +120,7 @@ void initializeObserversList(struct observer observers[]) {
     observers[i].token = nullptr;
     observers[i].tokenLength = 0;
     observers[i].remotePort = 0;
+    observers[i].sequenceNumber = 2;
   }
 }
 

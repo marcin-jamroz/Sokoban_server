@@ -50,16 +50,18 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
 {
   for (int i = 0; i < 10; i++) {
     if (observersList[i].isEmpty == false) {
-    
+
+      observersList[i].sequenceNumber++;
       CoapMessage observeMessage;
 
       uint8_t messageID[] = {201, 201};
 
       int digits = 1;
       int tmpValue = value;
+      
       while ( tmpValue /= 10 )
         digits++;
-      // Serial.println(digits);
+        
       unsigned char payload[digits];
       int packetLength = 0;
 
@@ -80,14 +82,7 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
      observeMessage.setContentFormat(0);
      observeMessage.setPayload(payload, digits);
 
-     
-      //for(int i = 0; i<sizeof(value); i++) {
-      //  payload[i] -= '0';
-      //}
-
       unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-      // Serial.print("handleRadioRequest packetLen: ");
-      // Serial.println(packetLength);
       sendUdpResponse(observeMessage, packet, packetLength);
       delete packet;
     }
