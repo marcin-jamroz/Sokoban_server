@@ -82,7 +82,7 @@ void loop() {
     delete packet;
     
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
-     // Serial.println("GET");
+      Serial.println("GET");
       handleGetRequest(coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
     }
 

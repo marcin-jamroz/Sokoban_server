@@ -50,7 +50,7 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
 {
   for (int i = 0; i < 10; i++) {
     if (observersList[i].isEmpty == false) {
-    
+
       CoapMessage observeMessage;
 
       uint8_t messageID[] = {201, 201};
@@ -69,27 +69,39 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
       //memcpy(payload, &value, sizeof(value));
 
       Serial.print("Token w handleRequest: ");
-      for(int n = 0; n < observersList[i].tokenLength; n++){
+      for (int n = 0; n < observersList[i].tokenLength; n++) {
         Serial.print(observersList[i].token[n], HEX);
       }
       Serial.println();
-      
-     observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
-     observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
-     observeMessage.setRemotePort(observersList[i].remotePort);
-     observeMessage.setContentFormat(0);
-     observeMessage.setPayload(payload, digits);
 
-     
-      //for(int i = 0; i<sizeof(value); i++) {
-      //  payload[i] -= '0';
-      //}
+      observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
+      observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
+      observeMessage.setRemotePort(observersList[i].remotePort);
+      observeMessage.setContentFormat(0);
+      observeMessage.setPayload(payload, digits);
 
-      unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-      // Serial.print("handleRadioRequest packetLen: ");
-      // Serial.println(packetLength);
-      sendUdpResponse(observeMessage, packet, packetLength);
-      delete packet;
+      uint8_t observeValue[3];
+      for (int j = 0; j < 8; j++)
+        bitWrite(observeValue[3], j, bitRead(observersList[i].sequenceNumber, j));
+
+      for (int j = 8; j < 16; j++)
+        bitWrite(observeValue[3], j, bitRead(observersList[i].sequenceNumber, j));
+
+      for (int j = 16; j < 24; j++)
+        bitWrite(observeValue[3], j, bitRead(observersList[i].sequenceNumber, j));
+
+      observeMessage.setObserveValue(true, observeValue);
+
+
+                                     //for(int i = 0; i<sizeof(value); i++) {
+                                     //  payload[i] -= '0';
+                                     //}
+
+                                     unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+                                     // Serial.print("handleRadioRequest packetLen: ");
+                                     // Serial.println(packetLength);
+                                     sendUdpResponse(observeMessage, packet, packetLength);
+                                     delete packet;
     }
   }
 }

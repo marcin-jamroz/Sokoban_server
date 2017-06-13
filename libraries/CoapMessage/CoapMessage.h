@@ -37,7 +37,9 @@ private:
 	//accept - format preferowamy dla odpowiedzi 
 	//content Format - format payloadu (text/plain, application/json itp)
 	String uriPath;
-	uint8_t accept, contentFormat, observe;
+	uint8_t accept, contentFormat;
+	uint8_t observeOptionValue[3];
+	bool isObserveEnabled, isAcceptEnabled;
 
 	IPAddress remoteIPAddress;
 	int remotePort;
@@ -47,6 +49,8 @@ private:
 	bool parseOptions(unsigned char * message, unsigned int &position, int length);
 
 	unsigned char* createHeader();
+	
+	unsigned char* optionsToBytes(int &optionsBytesLength);
 
 
 public:
@@ -70,6 +74,8 @@ public:
 	// Ustawia payload wiadomosci
 	void setPayload(unsigned char * payload, uint8_t payloadLength);
 
+	
+	void setObserveValue(bool enableFlag, uint8_t observeValue[]);
 	
 
 	// ================= Metody get... ================== //
@@ -119,6 +125,8 @@ public:
 	// Ustawia remote port
 	void setRemotePort(int port);
 
+	// domyœlny konstruktor
+	CoapMessage();
 
 	// destruktor obiektu
 	~CoapMessage();

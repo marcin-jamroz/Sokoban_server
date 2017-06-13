@@ -60,15 +60,13 @@ unsigned char * CoapMessage::toPacket(int &packetLength) {
 	}
 	*/
 	//   Content-Format tylko    tymczasowo !!!
-	uint8_t optionDelta = 12;
-	uint8_t optionLength = 1;
-	uint8_t optionDescriptionLength = 1;
-
-	unsigned char option = (optionDelta << 4) | optionLength;
-	unsigned char optionValue = this->contentFormat;
-	int optionBytes = 1 + 1;
+	int optionsBytesLength = 0;
+	unsigned char * optionsBytes = optionsToBytes(optionsBytesLength);
 	
-	packetLength = 4 + this->tokenLength + optionDescriptionLength + optionLength;
+	packetLength = 4 + this->tokenLength + optionsBytesLength;
+	Serial.print("optionByteslen: ");
+	Serial.println(optionsBytesLength);
+	Serial.println(optionsBytes[0],HEX);
 
 	if (this->payloadLength > 0)
 		packetLength += 1 + this->payloadLength;
@@ -77,16 +75,58 @@ unsigned char * CoapMessage::toPacket(int &packetLength) {
 	memcpy(packet, header, 4);
 	delete header;
 	memcpy(&packet[4], this->token, this->tokenLength);
-	memcpy(&packet[4 + tokenLength], &option, optionDescriptionLength);
-	memcpy(&packet[4 + tokenLength + 1], &optionValue, optionLength);
+	memcpy(&packet[4 + tokenLength], optionsBytes, optionsBytesLength);
+	
 	if (this->payloadLength > 0)
 	{
-		packet[4 + tokenLength + 1 + 1] = 255; // payload marker
-		memcpy(&packet[4 + tokenLength + 1 + 1 + 1], this->payload, this->payloadLength);
+		packet[4 + tokenLength + optionsBytesLength] = 255; // payload marker
+		memcpy(&packet[4 + tokenLength + optionsBytesLength + 1], this->payload, this->payloadLength);
 	}
-
+	Serial.print("packetLength: ");
+	Serial.println(packetLength);
 	//Serial.println("toPacket koniec");
 	return packet;
+}
+
+unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
+	uint8_t optionLength = 0;
+	uint8_t previousOptionNumber = 0, optionDelta = 0;
+	uint8_t observeOptionLength = 0;
+	uint8_t optionDescriptionLength = 1;
+
+	
+	
+	if(isObserveEnabled)
+	{
+		Serial.println("isObserveEnabled");
+		optionDelta = 6 - previousOptionNumber;
+		
+		// (observe > (1 << i*8) - liczenie ilosci bajtow ile moze zajac ta liczba
+		for(int i = 2; (observeOptionValue[i] > 0 && i>=0); i--)
+			observeOptionLength++;
+		optionsBytesLength += observeOptionLength + 1; // + 1 za description
+		
+		previousOptionNumber = 6;
+	}
+	optionDelta = 12 - previousOptionNumber;
+	uint8_t optionContentFormatLength = 0;
+	optionsBytesLength++; // option Content-Format Description
+	unsigned char optionContentFormat = (optionDelta << 4) | optionContentFormatLength;
+	
+	unsigned char * options = new unsigned char[optionsBytesLength];
+	
+	int optByte = 0;
+	if(isObserveEnabled) {
+		options[optByte++] = (6 << 4) | observeOptionLength;
+		for(int i = 2 - observeOptionLength+1; i<observeOptionLength; i++) {
+			options[optByte++] = observeOptionValue[i];
+		}
+	}
+	Serial.print("optionsBytesLength: ");
+	Serial.println(optionsBytesLength);
+	options[optByte] = optionContentFormat;
+	Serial.println(options[0],HEX);
+	return options;
 }
 
 unsigned char* CoapMessage::createHeader() {
@@ -101,19 +141,6 @@ unsigned char* CoapMessage::createHeader() {
 
 	unsigned char* header = new unsigned char[4]; //ca³y  nag³ówek CoAPa ma 4 bajty (32 bity)
 	unsigned char * bytePointer = &header[0]; //wskaŸnik na pierwszy bajt
-	/*
-	// Funkcja setBits numeruje bity od prawej tzn 1110 to 0 jest bitem numer 0 
-	BitOperations::setBits(bytePointer, this->coapVersion, 6); // ustawia wersje protokolu na 6 bicie od prawej
-	BitOperations::setBits(bytePointer, this->msgType, 4);//ustawienie 2 bitów od czwartego jako msgType
-	BitOperations::setBits(bytePointer, this->tokenLength, 0);//ustawienie d³ugoœci tokena TKL
-
-	bytePointer = &header[1];//przejœcie na kolejny bajt
-	BitOperations::setBits(bytePointer, this->codeClass, 5);
-	BitOperations::setBits(bytePointer, this->codeDetails, 0);
-
-	header[2] = this->messageID[0];
-	header[3] = this->messageID[1];
-	*/
 
 	// Nowa metoda bez BitOperations - DZIA£A - sprawdzone
 	header[0] = (COAP_VERSION << 6) | (msgType << 4) | (tokenLength);
@@ -192,7 +219,7 @@ void CoapMessage::getUriPath(String &dest)
 
 uint8_t CoapMessage::getObserve()
 {
-	return observe;
+	return observeOptionValue[2];
 }
 
 unsigned char* CoapMessage::getToken()
@@ -230,6 +257,13 @@ void CoapMessage::setRemotePort(int port){
 }
 
 
+void CoapMessage::setObserveValue(bool enableFlag, uint8_t observeValue[]){
+	isObserveEnabled = enableFlag;
+	observeOptionValue = observeValue;
+
+}
+
+
 // =============================funckje prywatne  =============================
 bool CoapMessage::parseHeader(unsigned char * header)
 {
@@ -259,8 +293,6 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 		
 	
 	unsigned int optionDelta = message[position] >> 4;// delta obecnej opcji
-	//	//Serial.print("optionDelta=");
-	//	//Serial.println(message[position],HEX);
 
 	unsigned int optionLength = message[position++] & 0b00001111;	//d³ugoœæ wartoœci opcji 
 
@@ -298,21 +330,22 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 			break;
 			
 		case CoapUtils::OptionNumber::CONTENT_FORMAT:
-			memcpy(&contentFormat, &message[position], optionLength);
+			if(optionLength == 0)
+				contentFormat = 0;
+			else memcpy(&contentFormat, &message[position], optionLength);
 			break;
 			
 		case CoapUtils::OptionNumber::OBSERVE:
 		
+		
 		if(optionLength == 0)
 		{
-			observe = 0;
+			observeOptionValue[0] = observeOptionValue[1] = observeOptionValue[2] = 0;
 		}
-		else{
-			memcpy(&observe, &message[position], optionLength);
-			////Serial.print("Wartosc observe=");
-			////Serial.println(observe);
-			////Serial.print("Dlugosc opcji observe=");
-			////Serial.println(optionLength);
+		else
+		{
+			for(int i = 0; i < optionLength; i++) 
+				memcpy(&observeOptionValue[2-i], &message[position], optionLength);
 		}
 			break;
 		}
@@ -321,6 +354,10 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 	////Serial.println("Wyszedlem z while z parseOptions");
 }
 
+CoapMessage::CoapMessage() {
+	isObserveEnabled = false;
+	isAcceptEnabled = false;
+}
 
 CoapMessage::~CoapMessage() {
 	////Serial.println("Destruktor CoapMessage");
