@@ -51,6 +51,7 @@ bool CoapMessage::parse(unsigned char msg[], int length, IPAddress remoteIPAddre
 
 unsigned char * CoapMessage::toPacket(int &packetLength) {
 	unsigned char* header = createHeader();
+	
 	/*
 	//Serial.println("toPacket poczatek");
 	for (int i = 0; i < 4; i++) {
@@ -64,26 +65,26 @@ unsigned char * CoapMessage::toPacket(int &packetLength) {
 	unsigned char * optionsBytes = optionsToBytes(optionsBytesLength);
 	
 	packetLength = 4 + this->tokenLength + optionsBytesLength;
-	Serial.print("optionByteslen: ");
-	Serial.println(optionsBytesLength);
-	Serial.println(optionsBytes[0],HEX);
+	Serial.print("packetLength: ");
+	Serial.println(packetLength);
+	//Serial.println(optionsBytes[optionsBytesLength-1],HEX);
 
 	if (this->payloadLength > 0)
 		packetLength += 1 + this->payloadLength;
-
+	//
+	
 	unsigned char * packet = new unsigned char[packetLength];
 	memcpy(packet, header, 4);
 	delete header;
 	memcpy(&packet[4], this->token, this->tokenLength);
 	memcpy(&packet[4 + tokenLength], optionsBytes, optionsBytesLength);
-	
+	delete optionsBytes;
 	if (this->payloadLength > 0)
 	{
 		packet[4 + tokenLength + optionsBytesLength] = 255; // payload marker
 		memcpy(&packet[4 + tokenLength + optionsBytesLength + 1], this->payload, this->payloadLength);
 	}
-	Serial.print("packetLength: ");
-	Serial.println(packetLength);
+	
 	//Serial.println("toPacket koniec");
 	return packet;
 }
@@ -93,6 +94,7 @@ unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
 	uint8_t previousOptionNumber = 0, optionDelta = 0;
 	uint8_t observeOptionLength = 0;
 	uint8_t optionDescriptionLength = 1;
+	
 	if(isObserveEnabled)
 	{
 		optionDelta = 6 - previousOptionNumber;		
@@ -103,18 +105,25 @@ unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
 		previousOptionNumber = 6;
 	}
 	// Content-Format option
+	uint8_t optionContentFormatLength;
+	uint8_t optionContentFormat;
 	optionDelta = 12 - previousOptionNumber;
-	uint8_t optionContentFormatLength = 0;
-	optionsBytesLength++; // option Content-Format Description
-	unsigned char optionContentFormat = (optionDelta << 4) | optionContentFormatLength;
+	if(contentFormat == 0)
+		optionContentFormatLength = 0;
+	else {
+		optionContentFormatLength = 1;
+	}
+	optionsBytesLength += 1 + optionContentFormatLength; // option Content-Format Description + optionContentFormatLength
+	unsigned char optionContentFormatDescription = (optionDelta << 4) | optionContentFormatLength;
 	// Block2 option
 	
 	int block2OptionSize = 0;
 	if(isBlock2Enabled) {
-		if(block2SequenceNumber < (1 << 4)) {
+		if(block2SequenceNumber < (1 << 3)) {
+			
 			block2OptionSize = 1;
 		}
-		else if(block2SequenceNumber >= (1 << 4) && block2SequenceNumber < (1 << 12)) {
+		else if(block2SequenceNumber >= (1 << 3) && block2SequenceNumber < (1 << 11)) {
 			block2OptionSize = 2;
 		}
 		else
@@ -124,19 +133,26 @@ unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
 		optionsBytesLength += block2OptionSize;
 		optionsBytesLength += 1; // block2 option description
 	}
+	
 	unsigned char * options = new unsigned char[optionsBytesLength];
+	
 	int optByte = 0;
 	if(isObserveEnabled) {
+		Serial.println("observe enable");
 		options[optByte++] = (6 << 4) | observeOptionLength;
 		for(int i = observeOptionLength-1; i>=0; i--) {
 			options[optByte++] = observeOptionValue[2-i];
+			//Serial.println(options[optByte-1]);
 		}
 	}
-	options[optByte++] = optionContentFormat;
+	options[optByte++] = optionContentFormatDescription;
+	if(optionContentFormatLength == 1)
+		options[optByte++] = contentFormat;
 	if(isBlock2Enabled) {
 		options[optByte++] = ((23 - 12) << 4) | block2OptionSize; // block2 - contentFormat
-		options[optByte++] = (block2SequenceNumber << (block2OptionSize*8 - 4)) | ((isMoreBlocks ? 1 : 0) << 3) | szx;
+		options[optByte++] = (block2SequenceNumber << (block2OptionSize*8 - 4)) | ((isMoreBlocks ? 1 : 0) << 3) | szx;	
 	}
+	
 	return options;
 }
 
@@ -375,13 +391,14 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 }
 
 CoapMessage::CoapMessage() {
+	contentFormat = 0;
 	isObserveEnabled = false;
 	isAcceptEnabled = false;
 	isBlock2Enabled = false;
 }
 
 CoapMessage::~CoapMessage() {
-	////Serial.println("Destruktor CoapMessage");
+	Serial.println("Destruktor CoapMessage");
 	if (token) delete token;
 	if (payload) delete payload;
 }
