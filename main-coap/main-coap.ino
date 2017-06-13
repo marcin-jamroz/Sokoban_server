@@ -11,12 +11,19 @@
 
 #define MAX_BUFFER 60
 
+#define ACK_TIMEOUT 2
+#define ACK_RANDOM_FACTOR 1.5
+#define MAX_RETRANSMIT 4
+
 byte mac[] = {0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf8};
 byte ip [] = {192, 168, 0, 25};
 short localPort = 5683;
 uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 00;
 char packetBuffer[MAX_BUFFER];
+
+unsigned long currentTime = 0;
+unsigned long previousTime = 0;
 
 enum option {LampOff, LampOn, LampStatus, PotStatus};
 
