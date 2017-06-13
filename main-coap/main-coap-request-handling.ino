@@ -9,10 +9,15 @@ void handleGetRequest(CoapMessage &coapMessage) {
   //  showDebug(coapMessage);
   Serial.print("UriPath=");
   Serial.println(uriPath);
-  // debugVar(uriPath);
-
+  
   if (uriPath == ".well-known/core") {
     respondToWellKnownCoreGet(coapMessage);
+  }
+
+  if (uriPath == "ackToCon") {
+    if (sendCon != 0) {
+      sendAckToCon(String((float)(recAck)/(float)(sendCon),2), coapMessage);
+    }
   }
 
   if (uriPath == "Lampka") {
@@ -42,9 +47,6 @@ void handleGetRequest(CoapMessage &coapMessage) {
 void handlePutRequest(CoapMessage &coapMessage) {
   unsigned char* payload = coapMessage.getPayload();
 
-//  showDebug(coapMessage); //in main-coap file :)
-//  debugPayload(payload, coapMessage.getPayloadLength());
-
   sendRequestViaRadio((short)(payload[0] - '0'));  // W MAIN-COAP-RADIO-COMMUNICATION.INO FILE :)
 
 }
@@ -65,8 +67,8 @@ void respondToWellKnownCoreGet(CoapMessage &coapMessage) {
 
   ledLamp.toCharArray((char*)payloadCharArray, ledLamp.length() + 1);
 
-//  debugPayload(payloadCharArray, sizeof(payloadCharArray));  //from main-coap.ino
- // debugPayload(responseMessage.getPayload(), responseMessage.getPayloadLength());
+  //  debugPayload(payloadCharArray, sizeof(payloadCharArray));  //from main-coap.ino
+  // debugPayload(responseMessage.getPayload(), responseMessage.getPayloadLength());
 
   responseMessage.setPayload(payloadCharArray, sizeof(payloadCharArray));
 
@@ -88,7 +90,7 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
       struct Response message;
       RF24NetworkHeader header;
       network.read(header, &message, sizeof(struct Response));
-      handleRadioRequest(message.option, message.value, coapMessage);
+      handleRadioRequest(message.value, coapMessage);
       waitForResponse = false;
     }
 
@@ -123,7 +125,7 @@ void addObserverForPotStatus(CoapMessage &coapMessage) {
 
       sendRequestViaRadio(PotStatus);
       Serial.println("Odpowiedz ze statusem potencjometru");
-   //   waitForResponseAndHandleIt(coapMessage);
+      //   waitForResponseAndHandleIt(coapMessage);
 
       break;
     }

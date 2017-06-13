@@ -25,6 +25,9 @@ char packetBuffer[MAX_BUFFER];
 unsigned long currentTime = 0;
 unsigned long previousTime = 0;
 
+short sendCon = 0;
+short recAck = 0;
+
 enum option {LampOff, LampOn, LampStatus, PotStatus};
 
 struct Request {
@@ -75,10 +78,7 @@ void loop() {
 
   //gdy przyszedł pakiet
   if (packetSize) {
-    //Serial.flush();
-   // Serial.println("Jestem w  , packetSize=");
-   // debugVar(&packetSize);
-
+    
     CoapMessage coapMessage;
     unsigned char * packet = new unsigned char[packetSize];
 
@@ -90,7 +90,6 @@ void loop() {
     delete packet;
     
     if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
-      //Serial.println("GET");
       handleGetRequest(coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
     }
 
