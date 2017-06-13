@@ -15,6 +15,10 @@ void handleGetRequest(CoapMessage &coapMessage) {
     respondToWellKnownCoreGet(coapMessage);
   }
 
+  if(uriPath == "observersNumber"){
+    sendAckToCon(String(observersNumber), coapMessage);
+  }
+
   if (uriPath == "ackToCon") {
     if (sendCon != 0) {
       sendAckToCon(String((float)(recAck)/(float)(sendCon),2), coapMessage);
@@ -143,8 +147,8 @@ void addObserverForPotStatus(CoapMessage &coapMessage) {
 
       sendRequestViaRadio(PotStatus);
       Serial.println("Odpowiedz ze statusem potencjometru");
-      //   waitForResponseAndHandleIt(coapMessage);
-
+      observersNumber++;
+      
       break;
     }
   }
@@ -170,8 +174,10 @@ void removeObserverForPotStatus(CoapMessage &coapMessage) {
         observersList[i].remotePort = 0;
         observersList[i].sequenceNumber = 2;
 
-        uint8_t zeroObserve[3] = {5, 5, 5};
-        coapMessage.setObserveValue(false, zeroObserve);
+      //  uint8_t zeroObserve[3] = {5, 5, 5};
+      //  coapMessage.setObserveValue(false, zeroObserve);
+        observersNumber--;
+        
         break;
       }
     }

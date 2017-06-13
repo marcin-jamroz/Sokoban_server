@@ -26,8 +26,9 @@ int blockNumber = 0;
 unsigned long currentTime = 0;
 unsigned long previousTime = 0;
 
-short sendCon = 0;
-short recAck = 0;
+int sendCon = 0;
+int recAck = 0;
+int observersNumber = 0;
 
 enum option {LampOff, LampOn, LampStatus, PotStatus};
 
