@@ -39,7 +39,12 @@ private:
 	String uriPath;
 	uint8_t accept, contentFormat;
 	uint8_t observeOptionValue[3];
-	bool isObserveEnabled, isAcceptEnabled;
+	bool isObserveEnabled, isAcceptEnabled, isBlock2Enabled;
+	
+	// Block2
+	uint8_t szx; 
+	bool isMoreBlocks; 
+	int block2SequenceNumber;
 
 	IPAddress remoteIPAddress;
 	int remotePort;
@@ -76,6 +81,8 @@ public:
 
 	
 	void setObserveValue(bool enableFlag, uint8_t* observeValue);
+	
+	void setBlock2Option(uint8_t szx, bool isMoreBlocks, int sequenceNumber);
 	
 
 	// ================= Metody get... ================== //

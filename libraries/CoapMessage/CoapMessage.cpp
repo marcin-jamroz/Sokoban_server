@@ -93,35 +93,38 @@ unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
 	uint8_t previousOptionNumber = 0, optionDelta = 0;
 	uint8_t observeOptionLength = 0;
 	uint8_t optionDescriptionLength = 1;
-
-	
-	
 	if(isObserveEnabled)
 	{
-		Serial.println("isObserveEnabled");
-		optionDelta = 6 - previousOptionNumber;
-		
+		optionDelta = 6 - previousOptionNumber;		
 		// (observe > (1 << i*8) - liczenie ilosci bajtow ile moze zajac ta liczba
 		for(int i = 2; (observeOptionValue[i] > 0 && i>=0); i--)
 			observeOptionLength++;
-		optionsBytesLength += observeOptionLength + 1; // + 1 za description
-		
+		optionsBytesLength += observeOptionLength + 1; // + 1 za description	
 		previousOptionNumber = 6;
 	}
-	
-	Serial.print("ObserveOptionLength: ");
-	Serial.println(observeOptionLength);
-	
+	// Content-Format option
 	optionDelta = 12 - previousOptionNumber;
 	uint8_t optionContentFormatLength = 0;
 	optionsBytesLength++; // option Content-Format Description
 	unsigned char optionContentFormat = (optionDelta << 4) | optionContentFormatLength;
+	// Block2 option
 	
-	Serial.print("optionContenetFormat: ");
-	Serial.println(optionContentFormat, HEX);
-	
+	int block2OptionSize = 0;
+	if(isBlock2Enabled) {
+		if(block2SequenceNumber < (1 << 4)) {
+			block2OptionSize = 1;
+		}
+		else if(block2SequenceNumber >= (1 << 4) && block2SequenceNumber < (1 << 12)) {
+			block2OptionSize = 2;
+		}
+		else
+		{
+			block2OptionSize = 3;
+		}
+		optionsBytesLength += block2OptionSize;
+		optionsBytesLength += 1; // block2 option description
+	}
 	unsigned char * options = new unsigned char[optionsBytesLength];
-	
 	int optByte = 0;
 	if(isObserveEnabled) {
 		options[optByte++] = (6 << 4) | observeOptionLength;
@@ -129,10 +132,11 @@ unsigned char* CoapMessage::optionsToBytes(int &optionsBytesLength) {
 			options[optByte++] = observeOptionValue[2-i];
 		}
 	}
-	Serial.print("optionsBytesLength: ");
-	Serial.println(optionsBytesLength);
-	options[optByte] = optionContentFormat;
-	Serial.println(options[0],HEX);
+	options[optByte++] = optionContentFormat;
+	if(isBlock2Enabled) {
+		options[optByte++] = ((23 - 12) << 4) | block2OptionSize; // block2 - contentFormat
+		options[optByte++] = (block2SequenceNumber << (block2OptionSize*8 - 4)) | ((isMoreBlocks ? 1 : 0) << 3) | szx;
+	}
 	return options;
 }
 
@@ -272,6 +276,12 @@ void CoapMessage::setObserveValue(bool enableFlag, uint8_t* observeValue){
 
 
 }
+void CoapMessage::setBlock2Option(uint8_t sizeExponent, bool isMoreBlocks, int sequenceNumber) {
+	this->isBlock2Enabled = true;
+	this->szx = sizeExponent;
+	this->isMoreBlocks = isMoreBlocks;
+	this->block2SequenceNumber = sequenceNumber;
+}
 
 
 // =============================funckje prywatne  =============================
@@ -367,6 +377,7 @@ bool CoapMessage::parseOptions(unsigned char * message, unsigned int &position, 
 CoapMessage::CoapMessage() {
 	isObserveEnabled = false;
 	isAcceptEnabled = false;
+	isBlock2Enabled = false;
 }
 
 CoapMessage::~CoapMessage() {
