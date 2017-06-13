@@ -2,6 +2,7 @@
 //======COAP - GET REQUEST HANDLING==========
 
 
+
 void handleGetRequest(CoapMessage &coapMessage) {
 
   String uriPath;
@@ -9,10 +10,15 @@ void handleGetRequest(CoapMessage &coapMessage) {
   //  showDebug(coapMessage);
   Serial.print("UriPath=");
   Serial.println(uriPath);
-  // debugVar(uriPath);
-
+  
   if (uriPath == ".well-known/core") {
     respondToWellKnownCoreGet(coapMessage);
+  }
+
+  if (uriPath == "ackToCon") {
+    if (sendCon != 0) {
+      sendAckToCon(String((float)(recAck)/(float)(sendCon),2), coapMessage);
+    }
   }
 
   if (uriPath == "Lampka") {
@@ -42,38 +48,52 @@ void handleGetRequest(CoapMessage &coapMessage) {
 void handlePutRequest(CoapMessage &coapMessage) {
   unsigned char* payload = coapMessage.getPayload();
 
-//  showDebug(coapMessage); //in main-coap file :)
-//  debugPayload(payload, coapMessage.getPayloadLength());
-
   sendRequestViaRadio((short)(payload[0] - '0'));  // W MAIN-COAP-RADIO-COMMUNICATION.INO FILE :)
 
 }
 
 
 void respondToWellKnownCoreGet(CoapMessage &coapMessage) {
-  Serial.println("odkrywanie zasobow");
-  CoapMessage responseMessage;
-  uint16_t messageID = 3124;
-  String ledLamp = "</Lampka>;rt=\"led-lamp-status\";if=\"executable\";ct=0,";                   //zasoby
-  String potentiometer = "</potentiometer>;rt=\"led-lamp-status\";if=\"executable\";ct=0;obs,";
-  unsigned char payloadCharArray[ledLamp.length() + 1];
-  int packetLength = 0;
-  unsigned char * packet;
 
-  responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::NON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
-  responseMessage.setContentFormat(40);
+  // Serial.println("odkrywanie zasobow");
 
-  ledLamp.toCharArray((char*)payloadCharArray, ledLamp.length() + 1);
+  // na razie 16 bajtow max ma payload
+  String wellKnown = "</Lampka>;rt=\"led-lamp-status\";if=\"executable\";ct=0,</Pot>;rt=\"led-lamp-status\";obs;if=\"executable\";ct=0;";
+  //  Serial.print("dlugosc wellKnown: ");
+  //  Serial.println(wellKnown.length());
+   // Serial.print("ilosc partow wellKnown: ");
+  int wellKnownPartsNumber = (int)ceil((double)wellKnown.length() / 16.0);
+  //  Serial.println(wellKnownPartsNumber);
 
-//  debugPayload(payloadCharArray, sizeof(payloadCharArray));  //from main-coap.ino
- // debugPayload(responseMessage.getPayload(), responseMessage.getPayloadLength());
 
-  responseMessage.setPayload(payloadCharArray, sizeof(payloadCharArray));
-
-  packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-  sendUdpResponse(coapMessage, packet, packetLength);
-  delete packet;
-
+  
+    int packetLength = 0;
+    unsigned char * packet;
+    String wellKnownPart = wellKnown.substring(blockNumber*16, blockNumber*16+16);
+    if (blockNumber == wellKnownPartsNumber - 1)
+      wellKnownPart = wellKnown.substring(blockNumber*16);
+//    Serial.println(wellKnownPart);
+//    Serial.println("po wellKnownPart");
+    CoapMessage responseMessage;
+    responseMessage.setRemoteIPAddress(coapMessage.getRemoteIPAddress());
+    responseMessage.setRemotePort(coapMessage.getRemotePort());
+    responseMessage.setHeader(coapMessage.getToken(), coapMessage.getTokenLength(), CoapUtils::MessageType::ACK, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, coapMessage.getMessageID());
+    responseMessage.setContentFormat(40);
+    if (blockNumber != wellKnownPartsNumber - 1)
+      responseMessage.setBlock2Option(0, 1, blockNumber);
+    else
+      responseMessage.setBlock2Option(0, 0, blockNumber);
+    unsigned char wellKnownCharArray[wellKnownPart.length() + 1];
+    wellKnownPart.toCharArray((char*)&wellKnownCharArray, wellKnownPart.length() + 1);
+    responseMessage.setPayload(wellKnownCharArray, sizeof(wellKnownCharArray));
+    debugPayload(wellKnownCharArray, 16);
+    packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+    sendUdpResponse(responseMessage, packet, packetLength);
+    delete packet;
+    
+    blockNumber++;
+    if(blockNumber == wellKnownPartsNumber)
+      blockNumber = 0;
 }
 
 //czeka na odpowiedź od resourca i przekazuje ją do funkcji ją obsługującej
@@ -88,7 +108,7 @@ void waitForResponseAndHandleIt(CoapMessage &coapMessage) {
       struct Response message;
       RF24NetworkHeader header;
       network.read(header, &message, sizeof(struct Response));
-      handleRadioRequest(message.option, message.value, coapMessage);
+      handleRadioRequest(message.value, coapMessage);
       waitForResponse = false;
     }
 
@@ -123,7 +143,7 @@ void addObserverForPotStatus(CoapMessage &coapMessage) {
 
       sendRequestViaRadio(PotStatus);
       Serial.println("Odpowiedz ze statusem potencjometru");
-   //   waitForResponseAndHandleIt(coapMessage);
+      //   waitForResponseAndHandleIt(coapMessage);
 
       break;
     }

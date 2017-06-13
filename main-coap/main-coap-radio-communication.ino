@@ -14,7 +14,7 @@ void sendRequestViaRadio(short option) { // opcja : 0 - lampka off, 1 - lampka O
 
 
 //obsługa przyjścia waidomości od resourca drogą radiową, odesłanie COAP-owej wiadomości jako response
-void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {
+void handleRadioRequest(short value, CoapMessage &coapMessage) {
 
   Serial.println(value);
   CoapMessage responseMessage;
@@ -31,11 +31,6 @@ void handleRadioRequest(short option, short value, CoapMessage &coapMessage) {
   //dla statusu potencjometru i lampki, to samo - > odesłanie value w payload
   sprintf(payload, "%u", value); //kopiowanie  value do payloadu
 
-  //memcpy(payload, &value, sizeof(value));
-
-  //for(int i = 0; i<sizeof(value); i++) {
-  //  payload[i] -= '0';
-  //}
 
   setResponseMessageFields(responseMessage, coapMessage, messageID, payload, digits); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
 
@@ -69,15 +64,6 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
       //dla statusu potencjometru i lampki, to samo - > odesłanie value w payload
       sprintf(payload, "%u", value); //kopiowanie  value do payloadu
 
-      //memcpy(payload, &value, sizeof(value));
-
-      //      Serial.print("Token w handleRequest: ");
-      //      for (int n = 0; n < observersList[i].tokenLength; n++) {
-      //        Serial.print(observersList[i].token[n], HEX);
-      //      }
-      //      Serial.println();
-
-
       observeMessage.setHeader(observersList[i].token, observersList[i].tokenLength, CoapUtils::MessageType::CON, CoapUtils::ResponseCode::SUCCESS, CoapUtils::SuccessResponseCode::CONTENT, messageID);
       observeMessage.setRemoteIPAddress(observersList[i].remoteAddress);
       observeMessage.setRemotePort(observersList[i].remotePort);
@@ -89,23 +75,11 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
       observeValue[1] = (uint8_t)(observersList[i].sequenceNumber >> 8);
       observeValue[0] = (uint8_t)(observersList[i].sequenceNumber >> 16);
 
-
-      Serial.print("Sequence number value: ");
-      Serial.println(observeValue[2]);
-      Serial.println(observeValue[1]);
-      Serial.println(observeValue[0]);
-
       observeMessage.setObserveValue(true, observeValue);
 
-
-      //for(int i = 0; i<sizeof(value); i++) {
-      //  payload[i] -= '0';
-      //}
-
       unsigned char * packet = observeMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-      // Serial.print("handleRadioRequest packetLen: ");
-      // Serial.println(packetLength);
       sendUdpResponse(observeMessage, packet, packetLength);
+      sendCon++;
 
       previousTime = millis();
       unsigned long timeout = random(ACK_TIMEOUT * 1000, ACK_TIMEOUT * ACK_RANDOM_FACTOR * 1000);
@@ -119,10 +93,12 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
           repeats++;
           previousTime = currentTime;
           sendUdpResponse(observeMessage, packet, packetLength);
+          sendCon++;
         }
 
         if (repeats > MAX_RETRANSMIT) {
-          Serial.println("Nie otrzymano wiadomosc ACK");
+          Serial.println("Nie otrzymano wiadomosc ACK, usuwam obserwatora");
+          removeObserverForPotStatus(observeMessage);
           break;
         }
         int ackPacketSize = Udp.parsePacket();
@@ -139,6 +115,7 @@ void handleRadioRequest(short option, short value)    //przeciążenie do obsłu
 
           if (ackCoapMessage.getMessageType() == CoapUtils::MessageType::ACK) {
             Serial.println("Otrzymano wiadomosc ACK");
+            recAck++;
             break;
           }
         }
@@ -173,6 +150,27 @@ void setResponseMessageFields(CoapMessage & responseMessage,  CoapMessage & coap
 
     //   showDebug(responseMessage);
   }
+}
+
+
+void sendAckToCon(String value, CoapMessage &message) {
+  Serial.println(value);
+  CoapMessage responseMessage;
+  uint8_t messageID[] = {201, 201};
+
+  int payloadLength = value.length();
+  unsigned char payload[payloadLength];
+  int packetLength = 0;
+
+  value.toCharArray(payload, payloadLength);
+
+  setResponseMessageFields(responseMessage, message, messageID, payload, payloadLength); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
+
+  unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
+  // Serial.print("handleRadioRequest packetLen: ");
+  // Serial.println(packetLength);
+  sendUdpResponse(message, packet, packetLength);
+  delete packet;
 }
 
 
