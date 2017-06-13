@@ -153,20 +153,18 @@ void setResponseMessageFields(CoapMessage & responseMessage,  CoapMessage & coap
 }
 
 
-void sendAckToCon(String value, CoapMessage &message){
- Serial.println(value);
+void sendAckToCon(String value, CoapMessage &message) {
+  Serial.println(value);
   CoapMessage responseMessage;
   uint8_t messageID[] = {201, 201};
 
- int payloadLength = value.length();
+  int payloadLength = value.length();
   unsigned char payload[payloadLength];
   int packetLength = 0;
 
-value.toCharArray(payload, payloadLength);
+  value.toCharArray(payload, payloadLength);
 
-  setResponseMessageFields(responseMessage, message, messageID, payload, payloadLength
-  
-  ); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
+  setResponseMessageFields(responseMessage, message, messageID, payload, payloadLength); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
 
   unsigned char * packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
   // Serial.print("handleRadioRequest packetLen: ");

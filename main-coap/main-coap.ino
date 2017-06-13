@@ -21,6 +21,7 @@ short localPort = 5683;
 uint8_t OUR_CHANNEL = 120;
 uint8_t THIS_NODE = 00;
 char packetBuffer[MAX_BUFFER];
+int blockNumber = 0;
 
 unsigned long currentTime = 0;
 unsigned long previousTime = 0;
@@ -78,25 +79,28 @@ void loop() {
 
   //gdy przyszedł pakiet
   if (packetSize) {
-    
-    CoapMessage coapMessage;
+
+
+    CoapMessage * coapMessage = new CoapMessage();
     unsigned char * packet = new unsigned char[packetSize];
 
     Udp.read(packetBuffer, MAX_BUFFER); //wczytanie pakietu do bufora
     memcpy(packet, packetBuffer, packetSize);  //skopiowanie do zmiennej packet
    // printPacketInHex(packet, packetSize);
     
-    coapMessage.parse(packet, packetSize, Udp.remoteIP(), Udp.remotePort());// "wypełnienie obiektu CoapMessage" danymi pakietu
+    coapMessage->parse(packet, packetSize, Udp.remoteIP(), Udp.remotePort());// "wypełnienie obiektu CoapMessage" danymi pakietu
     delete packet;
     
-    if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::GET) {
-      handleGetRequest(coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
+
+    if (coapMessage->getCodeDetails() == CoapUtils::RequestMethod::GET) {
+      //Serial.println("GET");
+      handleGetRequest(*coapMessage); //IN MAIN-COAP-GET-HANDLING.INO FILE :)
     }
 
-    if (coapMessage.getCodeDetails() == CoapUtils::RequestMethod::PUT) {
-      handlePutRequest(coapMessage);//IN MAIN-COAP-PUT-HANDLING.INO FILE :)
+    if (coapMessage->getCodeDetails() == CoapUtils::RequestMethod::PUT) {
+      handlePutRequest(*coapMessage);//IN MAIN-COAP-PUT-HANDLING.INO FILE :)
     }
-
+    delete coapMessage;
   }
 
 
@@ -130,13 +134,13 @@ void initializeObserversList(struct observer observers[]) {
   }
 }
 
-//void debugPayload(unsigned char* payload, uint8_t length ) {
-//  Serial.print("payload=");
-//
-//  for (int i = 0; i < length; i++) {
-//    Serial.print((char)payload[i]);
-//  }
-//}
+void debugPayload(unsigned char* payload, uint8_t length ) {
+  Serial.print("payload=");
+
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+}
 //
 //void showDebug(CoapMessage &coapMessage) {
 //  debugVar(coapMessage.getCoapVersion());
