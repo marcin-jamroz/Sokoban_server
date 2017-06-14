@@ -60,7 +60,7 @@ struct observer observersList[10];            // 10 observerów może być
 void setup() {
   Serial.begin(115200);
   SPI.begin();
-  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac);
   radio.begin();
   network.begin(OUR_CHANNEL, THIS_NODE);
   Udp.begin(localPort);
