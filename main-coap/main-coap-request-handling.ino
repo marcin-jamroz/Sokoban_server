@@ -15,7 +15,7 @@ void handleGetRequest(CoapMessage &coapMessage) {
     respondToWellKnownCoreGet(coapMessage);
   }
 
-  if(uriPath == "observersNumber"){
+  if(uriPath == "obsNum"){
     sendAckToCon(String(observersNumber), coapMessage);
   }
 
@@ -62,7 +62,7 @@ void respondToWellKnownCoreGet(CoapMessage &coapMessage) {
   // Serial.println("odkrywanie zasobow");
 
   // na razie 16 bajtow max ma payload
-  String wellKnown = "</Lampka>,</Pot>;obs;rt=\"observe\",</ackToCon>,</observersNumber>";
+  String wellKnown = "</Lampka>,</Pot>;obs;rt=\"observe\",</ackToCon>,</obsNum>";
   //  Serial.print("dlugosc wellKnown: ");
   //  Serial.println(wellKnown.length());
    // Serial.print("ilosc partow wellKnown: ");
@@ -88,12 +88,12 @@ void respondToWellKnownCoreGet(CoapMessage &coapMessage) {
     else
       responseMessage.setBlock2Option(0, 0, blockNumber);
     unsigned char wellKnownCharArray[wellKnownPart.length() + 1];
-    wellKnownCharArray[wellKnownPart.length()]=0;
+   // wellKnownCharArray[wellKnownPart.length()]=0;
     wellKnownPart.toCharArray((char*)&wellKnownCharArray, wellKnownPart.length()+1);
     responseMessage.setPayload(wellKnownCharArray, sizeof(wellKnownCharArray));
-    debugPayload(wellKnownCharArray, 16);
+    debugPayload(responseMessage.getPayload(), 16);
     packet = responseMessage.toPacket(packetLength); // packetLength jest przekazywane przez referencję i jest zmieniane w funkcji na prawidlową wartosc
-    sendUdpResponse(responseMessage, packet, packetLength);
+    sendUdpResponse(responseMessage, packet, packetLength-1);
     delete packet;
     
     blockNumber++;

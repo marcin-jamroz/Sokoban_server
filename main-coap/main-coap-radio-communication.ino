@@ -159,10 +159,10 @@ void sendAckToCon(String value, CoapMessage &message) {
   uint8_t messageID[] = {201, 201};
 
   int payloadLength = value.length();
-  unsigned char payload[payloadLength];
+  unsigned char payload[payloadLength+1];
   int packetLength = 0;
 
-  value.toCharArray(payload, payloadLength);
+  value.toCharArray(payload, payloadLength+1);
 
   setResponseMessageFields(responseMessage, message, messageID, payload, payloadLength); //SPRAWIDZC CZY DOBRZE TE REFERENCJE SĄ PRZEKAZYWANE I OBIEKTY/TABLICE DO FUNKCJI :)
 
